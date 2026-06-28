@@ -9,13 +9,22 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
     public sealed class CancellationTokenAnalyzerTests
         : AnalyzerTestBase<CancellationTokenAnalyzer>
     {
+        protected override void SetupTestState(SolutionState state)
+        {
+            state.Sources.Add(
+                """
+                global using System.Threading;
+                global using System.Threading.Tasks;
+                """);
+
+            base.SetupTestState(state);
+        }
+
         [Test]
         public async Task ShouldReportIfTask()
         {
             var source =
                 """
-                using System.Threading.Tasks;
-
                 namespace TestNamespace
                 {
                     public class Test
@@ -43,8 +52,6 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
         {
             var source =
                 """
-                using System.Threading.Tasks;
-
                 namespace TestNamespace
                 {
                     public class Test
@@ -72,9 +79,6 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
         {
             var source =
                 """
-                using System.Threading;
-                using System.Threading.Tasks;
-
                 namespace TestNamespace
                 {
                     public class Test
@@ -105,8 +109,6 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
         {
             var source =
                 """
-                using System.Threading.Tasks;
-
                 namespace TestNamespace
                 {
                     public static class Program
