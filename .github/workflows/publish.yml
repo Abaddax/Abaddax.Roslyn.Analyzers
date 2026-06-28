@@ -1,0 +1,27 @@
+name: Publish
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - "**/*.csproj"
+
+jobs:
+  check_version:    
+    uses: Abaddax/workflows/.github/workflows/dotnet.check_version.yml@master
+    with:
+      CSPROJ_PATH: Abaddax.Roslyn.Analyzers.Package/Abaddax.Roslyn.Analyzers.Package.csproj
+      
+  ci:    
+    needs: [check_version]
+    if: needs.check_version.outputs.version_changed == 'true'
+    uses: ./.github/workflows/ci.yml
+  
+  publish:  
+    needs: [check_version, ci]
+    if: needs.check_version.outputs.version_changed == 'true'
+    uses: ./.github/workflows/publish.nuget.yml
+    permissions:
+      contents: write
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
