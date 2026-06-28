@@ -1,18 +1,27 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.FlowAnalysis;
-using Microsoft.CodeAnalysis.Operations;
+using System.Diagnostics;
 
 namespace Abaddax.Roslyn.Analyzers.Extensions
 {
     internal static class ExpressionSyntaxHelper
     {
         #region Helper
+        [DebuggerDisplay("{DebuggerDisplay,nq}")]
         public abstract class ExpressionOrigin
         {
             public abstract string ToFullString();
+
+            private string DebuggerDisplay
+            {
+                get
+                {
+                    return ToFullString().Replace("\r", "").Replace("\n", "");
+                }
+            }
         }
-        public class SyntaxExpressionOrigin : ExpressionOrigin
+        public sealed class SyntaxExpressionOrigin : ExpressionOrigin
         {
             public ExpressionSyntax Syntax { get; }
             public SyntaxExpressionOrigin(ExpressionSyntax syntax)
@@ -20,18 +29,6 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                 Syntax = syntax ?? throw new ArgumentNullException(nameof(syntax));
             }
             public override string ToFullString() => Syntax.ToFullString();
-        }
-        public class AsyncSyntaxExpressionOrigin : ExpressionOrigin
-        {
-            public ExpressionOrigin Receiver { get; }
-            public AsyncSyntaxExpressionOrigin(ExpressionOrigin receiver)
-            {
-                Receiver = receiver ?? throw new ArgumentNullException(nameof(receiver));
-            }
-            public override string ToFullString()
-            {
-                return "await " + Receiver.ToFullString();
-            }
         }
         public sealed class MemberExpressionOrigin : ExpressionOrigin
         {
@@ -50,8 +47,42 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                 return Receiver.ToFullString() + "." + Member.Name;
             }
         }
+        public abstract class ForwardingExpressionOrigin : ExpressionOrigin
+        {
+            public ExpressionOrigin Receiver { get; }
+            public ForwardingExpressionOrigin(ExpressionOrigin receiver)
+            {
+                Receiver = receiver ?? throw new ArgumentNullException(nameof(receiver));
+            }
+        }
+        public sealed class AsyncSyntaxExpressionOrigin : ForwardingExpressionOrigin
+        {
+            public AsyncSyntaxExpressionOrigin(ExpressionOrigin receiver)
+                : base(receiver) { }
+            public override string ToFullString()
+            {
+                return "await " + Receiver.ToFullString();
+            }
+        }
+        public sealed class InvocationSyntaxExpressionOrigin : ForwardingExpressionOrigin
+        {
+            public InvocationExpressionSyntax Invocation { get; }
+            public InvocationSyntaxExpressionOrigin(ExpressionOrigin receiver, InvocationExpressionSyntax invocation)
+                : base(receiver)
+            {
+                Invocation = invocation ?? throw new ArgumentNullException(nameof(invocation));
+            }
+            public override string ToFullString()
+            {
+                return Receiver.ToFullString() + Invocation.ArgumentList.ToFullString();
+            }
+        }
         #endregion
 
+        /// <summary>
+        /// Tries to unwrap forward variable declarations and assignments back to the last conclusiv assignment
+        /// </summary>
+        /// <returns>Last conclusiv assignment or <paramref name="expression"/></returns>
         public static ExpressionSyntax TraverseAssignments(
             ExpressionSyntax expression,
             SemanticModel semanticModel,
@@ -59,34 +90,41 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (expression.IgnoreCasts().IgnoreNullSuppression() is not IdentifierNameSyntax identifier)
-                return expression;
-            var symbol = semanticModel.GetSymbolInfo(identifier, cancellationToken).Symbol;
-            if (symbol is not ILocalSymbol localSymbol)
+            var methodBody = expression.GetContainingMethodDeclarationBlock();
+            if (methodBody == null)
                 return expression;
 
-            var cfg = GetControlFlowGraph(
-                identifier,
-                semanticModel,
-                cancellationToken);
-            if (cfg == null)
-                return identifier;
+            var targetSymbol = semanticModel.GetSymbolInfo(expression, cancellationToken).Symbol;
+            if (targetSymbol == null)
+                return expression;
 
-            var definitions = FindDefinitions(
-                cfg,
-                localSymbol,
-                expression,
-                cancellationToken);
-            if (definitions.Count != 1)
-                return expression;
-            if (definitions[0].Value.Syntax is not ExpressionSyntax value)
-                return expression;
-            return TraverseAssignments(
-                value,
+            var lastAssignment = AssignmentHelper.GetDefinitiveLastAssignment(
+                methodBody,
+                expression.IgnoreCasts().IgnoreNullSuppression(),
+                targetSymbol,
                 semanticModel,
                 cancellationToken);
+            if (lastAssignment.Type != AssignmentHelper.LastAssignment.MatchType.Found || lastAssignment.Assignment == null)
+                return expression;
+
+            var lastAssignmentExpression = lastAssignment.Assignment.Syntax switch
+            {
+                IdentifierNameSyntax identifier when identifier.Parent is ForEachStatementSyntax foreachLoop => foreachLoop.Expression,
+                AssignmentExpressionSyntax assignment => assignment.Right,
+                VariableDeclaratorSyntax varDecl => varDecl.Initializer?.Value,
+                _ => null
+            };
+            if (lastAssignmentExpression == null)
+                return expression;
+
+            return TraverseAssignments(lastAssignmentExpression, semanticModel, cancellationToken);
         }
 
+        /// <summary>
+        /// Tries to expand an expression to its full path
+        /// </summary>
+        /// <remarks>Example: var x = new Prop(); var y = x.A; var z = y.B; -> z = new Prop().A.B</remarks>
+        /// <returns></returns>
         public static ExpressionOrigin? TryExpand(
             ExpressionSyntax expression,
             SemanticModel semanticModel,
@@ -101,16 +139,6 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
 
             switch (expression)
             {
-                case IdentifierNameSyntax identifier:
-                {
-                    var symbol = semanticModel.GetSymbolInfo(identifier, cancellationToken)
-                        .Symbol;
-                    if (symbol is not ILocalSymbol)
-                    {
-                        return new SyntaxExpressionOrigin(identifier);
-                    }
-                    return TryExpand(identifier, semanticModel, cancellationToken);
-                }
                 //Unwrap nested property access
                 case MemberAccessExpressionSyntax memberAccess:
                 {
@@ -146,92 +174,21 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                         return null;
                     return new AsyncSyntaxExpressionOrigin(receiver);
                 }
+                //Unwrap invocations
+                case InvocationExpressionSyntax invocation:
+                {
+                    var receiver = TryExpand(
+                        invocation.Expression,
+                        semanticModel,
+                        cancellationToken);
+                    if (receiver == null)
+                        return new SyntaxExpressionOrigin(expression);
+                    return new InvocationSyntaxExpressionOrigin(receiver, invocation);
+                    //return receiver;
+                }
                 default:
                     return new SyntaxExpressionOrigin(expression);
             }
-        }
-
-        private static List<IAssignmentOperation> FindDefinitions(
-            ControlFlowGraph cfg,
-            ILocalSymbol target,
-            ExpressionSyntax use,
-            CancellationToken cancellationToken)
-        {
-            var result = new HashSet<IAssignmentOperation>();
-
-            foreach (var block in cfg.Blocks)
-            {
-                foreach (var operation in block.Operations)
-                {
-                    CollectAssignments(
-                        operation,
-                        target,
-                        result,
-                        cancellationToken);
-                }
-            }
-
-            // Keep only definitions before the use
-            return result
-                .Where(x => x.Syntax.SpanStart < use.SpanStart)
-                .ToList();
-        }
-        private static void CollectAssignments(
-            IOperation operation,
-            ILocalSymbol target,
-            HashSet<IAssignmentOperation> result,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (operation is IAssignmentOperation assignment)
-            {
-                var symbol =
-                    GetAssignedSymbol(assignment.Target);
-                if (SymbolEqualityComparer.Default.Equals(symbol, target))
-                {
-                    result.Add(assignment);
-                }
-            }
-
-            foreach (var child in operation.ChildOperations)
-            {
-                CollectAssignments(
-                    child,
-                    target,
-                    result,
-                    cancellationToken);
-            }
-        }
-        private static ISymbol? GetAssignedSymbol(
-            IOperation operation)
-        {
-            if (operation is ILocalReferenceOperation local)
-                return local.Local;
-            return null;
-        }
-        private static ControlFlowGraph? GetControlFlowGraph(
-            ExpressionSyntax expression,
-            SemanticModel semanticModel,
-            CancellationToken cancellationToken)
-        {
-            var body = expression.FirstAncestorOrSelf<BaseMethodDeclarationSyntax>();
-            if (body == null)
-                return null;
-
-            var operation = semanticModel.GetOperation(
-                body,
-                cancellationToken);
-
-            if (operation is IMethodBodyOperation methodBody)
-            {
-                return ControlFlowGraph.Create(methodBody, cancellationToken);
-            }
-            if (operation is IConstructorBodyOperation constructorBody)
-            {
-                return ControlFlowGraph.Create(constructorBody, cancellationToken);
-            }
-            return null;
         }
     }
 }

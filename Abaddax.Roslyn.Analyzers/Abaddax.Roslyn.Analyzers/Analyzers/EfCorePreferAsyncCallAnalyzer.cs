@@ -59,7 +59,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
                 return;
 
-            var methodBlock = invocation.GetCurrentMethodDeclarationBlock();
+            var methodBlock = invocation.GetContainingMethodDeclarationBlock();
             if (methodBlock == null)
                 return;
             if (context.SemanticModel.GetDeclaredSymbol(methodBlock) is not IMethodSymbol callerSymbol)

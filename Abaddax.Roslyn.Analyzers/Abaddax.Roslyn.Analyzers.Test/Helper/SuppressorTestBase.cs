@@ -2,8 +2,6 @@
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
-using System.Collections.Immutable;
-using System.Text.RegularExpressions;
 
 namespace Abaddax.Roslyn.Analyzers.Test.Helper
 {
@@ -23,6 +21,8 @@ namespace Abaddax.Roslyn.Analyzers.Test.Helper
         }
         protected async Task VerifySuppressorAsync(string source, Action<SolutionState> configureTestState, params DiagnosticResult[] expected)
         {
+            if (expected.Any(x => x.IsSuppressed == null))
+                throw new Exception("'DiagnosticResult.IsSuppressed' must be set. Use '.WithIsSuppressed(suppressed)'");
             var test = new CSharpAnalyzerTest<TSuppressor, DefaultVerifier>()
             {
                 TestCode = source,
