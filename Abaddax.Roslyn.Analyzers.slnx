@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Solution items/">
+    <File Path="Abaddax.Roslyn.Analyzers/Directory.Build.props" />
+  </Folder>
   <Project Path="Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers.CodeFixes/Abaddax.Roslyn.Analyzers.CodeFixes.csproj" />
   <Project Path="Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers.Package/Abaddax.Roslyn.Analyzers.Package.csproj" />
   <Project Path="Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers.Test/Abaddax.Roslyn.Analyzers.Test.csproj" />

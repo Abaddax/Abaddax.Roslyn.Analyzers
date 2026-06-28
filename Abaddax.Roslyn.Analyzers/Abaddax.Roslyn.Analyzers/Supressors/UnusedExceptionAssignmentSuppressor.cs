@@ -1,3 +1,4 @@
+using Abaddax.Roslyn.Analyzers.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -31,6 +32,10 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 // Find the node that triggered the warning
                 var tree = diagnostic.Location.SourceTree;
                 if (tree == null)
+                    continue;
+
+                var options = context.Options.GetGlobalOptions(tree);
+                if (!options.IsEnabled(AnalyzerIdentifiers.EfCoreDereferencePossibleNullReferenceSuppression, defaultValue: true))
                     continue;
 
                 var root = tree.GetRoot(context.CancellationToken);

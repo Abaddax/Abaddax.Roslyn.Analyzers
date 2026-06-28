@@ -52,6 +52,18 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
             }
             """;
 
+        protected override void SetupTestState(SolutionState state)
+        {
+            state.AnalyzerConfigFiles.Add(("/.editorconfig",
+                    $"""
+                    root = true
+
+                    [*.cs]
+                    dotnet_code_quality.{AnalyzerIdentifiers.EfCoreQueryNullReferenceSuppression}.enabled = true
+                    """));
+            base.SetupTestState(state);
+        }
+
         [Test]
         public async Task ShouldSuppressIfInsideQuery()
         {

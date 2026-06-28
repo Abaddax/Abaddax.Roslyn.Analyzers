@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsAnalyzer>true</IsAnalyzer>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <PackageId>Abaddax.Roslyn.Analyzers</PackageId>
+    <PackageTags>Abaddax.Roslyn.Analyzers, analyzers</PackageTags>
+    <Version>0.0.1-preview1</Version>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>   
+    <NoPackageAnalysis>true</NoPackageAnalysis>-->
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddAnalyzersToOutput</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.CodeFixes\Abaddax.Roslyn.Analyzers.CodeFixes.csproj" />
+    <ProjectReference Include="..\Abaddax.Roslyn.Analyzers\Abaddax.Roslyn.Analyzers.csproj" />
+  </ItemGroup>
+
+  <Target Name="_AddAnalyzersToOutput">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(OutputPath)\Abaddax.Roslyn.Analyzers.dll" PackagePath="analyzers/dotnet/cs" />
+      <TfmSpecificPackageFile Include="$(OutputPath)\Abaddax.Roslyn.Analyzers.CodeFixes.dll" PackagePath="analyzers/dotnet/cs" />
+    </ItemGroup>
+  </Target>
+
+</Project>

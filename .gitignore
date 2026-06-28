@@ -482,3 +482,5 @@ $RECYCLE.BIN/
 *.swp
 # Added by Abaddax.Build.Common
 /Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers/.editorconfig
+# Added by Abaddax.Build.Common
+/Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers.CodeFixes/.editorconfig

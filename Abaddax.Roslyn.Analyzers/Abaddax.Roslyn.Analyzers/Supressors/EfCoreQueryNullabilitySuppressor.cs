@@ -37,6 +37,10 @@ namespace Abaddax.Utilities.Analyzers.Supressors
                 if (tree == null)
                     continue;
 
+                var options = context.Options.GetGlobalOptions(tree);
+                if (!options.IsEnabled(AnalyzerIdentifiers.EfCoreQueryNullReferenceSuppression, defaultValue: false))
+                    continue;
+
                 var root = tree.GetRoot(context.CancellationToken);
                 var node = root.FindNode(diagnostic.Location.SourceSpan);
 

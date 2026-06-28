@@ -8,6 +8,11 @@ namespace Abaddax.Roslyn.Analyzers.Test.Helper
     public abstract class AnalyzerTestBase<TAnalyzer>
         where TAnalyzer : DiagnosticAnalyzer, new()
     {
+        protected virtual void SetupTestState(SolutionState state)
+        {
+            return;
+        }
+
         protected Task VerifyAnalyzerAsync(string source, params DiagnosticResult[] expected)
         {
             return VerifyAnalyzerAsync(source, (_) => { }, expected);
@@ -25,6 +30,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.Helper
             {
                 TestCode = source,
             };
+            SetupTestState(test.TestState);
             configureTestState.Invoke(test.TestState);
             test.ExpectedDiagnostics.AddRange(expected);
             return test.RunAsync(CancellationToken.None);
