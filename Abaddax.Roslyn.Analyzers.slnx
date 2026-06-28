@@ -1,10 +1,10 @@
 <Solution>
   <Folder Name="/Solution items/">
-    <File Path="Abaddax.Roslyn.Analyzers/Directory.Build.props" />
+    <File Path="Directory.Build.props" />
   </Folder>
-  <Project Path="Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers.CodeFixes/Abaddax.Roslyn.Analyzers.CodeFixes.csproj" />
-  <Project Path="Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers.Package/Abaddax.Roslyn.Analyzers.Package.csproj" />
-  <Project Path="Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers.Test/Abaddax.Roslyn.Analyzers.Test.csproj" />
-  <Project Path="Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers.Vsix/Abaddax.Roslyn.Analyzers.Vsix.csproj" />
-  <Project Path="Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers.csproj" />
+  <Project Path="Abaddax.Roslyn.Analyzers.CodeFixes/Abaddax.Roslyn.Analyzers.CodeFixes.csproj" />
+  <Project Path="Abaddax.Roslyn.Analyzers.Package/Abaddax.Roslyn.Analyzers.Package.csproj" />
+  <Project Path="Abaddax.Roslyn.Analyzers.Test/Abaddax.Roslyn.Analyzers.Test.csproj" />
+  <Project Path="Abaddax.Roslyn.Analyzers.Vsix/Abaddax.Roslyn.Analyzers.Vsix.csproj" />
+  <Project Path="Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers.csproj" />
 </Solution>
