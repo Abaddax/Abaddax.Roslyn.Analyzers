@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <Description>A collection of C# Roslyn analyzers</Description>
+    <Authors>Abaddax</Authors> 
+    <RepositoryUrl>https://github.com/Abaddax/Abaddax.Roslyn.Analyzers.git</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+</Project>

@@ -36,7 +36,8 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             var location = methodDecl.GetLocation();
             if (location?.SourceTree == null)
                 return;
-            var options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(location.SourceTree);
+
+            var options = context.Options.GetGlobalOptions(location.SourceTree);
 
             var method = context.SemanticModel.GetDeclaredSymbol(methodDecl);
             if (method == null)
@@ -63,12 +64,8 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
         private static bool IsControllerActionMethod(IMethodSymbol method, AnalyzerConfigOptions options)
         {
             //Only if option is enabled
-            if (options.TryGetValue($"dotnet_code_quality.{AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer}.ignore_controller", out var value) &&
-                bool.TryParse(value, out var ignoreController) &&
-                ignoreController != true)
-            {
+            if (!options.IsSet(AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer, "ignore_controller"))
                 return false;
-            }
 
             if (!method.IsInsideController())
                 return false;
@@ -81,12 +78,8 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
         private static bool IsTestingMethod(IMethodSymbol method, AnalyzerConfigOptions options)
         {
             //Only if option is enabled
-            if (options.TryGetValue($"dotnet_code_quality.{AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer}.ignore_tests", out var value) &&
-                bool.TryParse(value, out var ignoreTests) &&
-                ignoreTests != true)
-            {
+            if (!options.IsSet(AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer, "ignore_tests"))
                 return false;
-            }
 
             if (method.GetAttributes()
                 .Any(attr =>
