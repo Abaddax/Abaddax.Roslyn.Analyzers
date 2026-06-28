@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="Abaddax.Utilities.Analyzers.52991400-4712-4471-8f0c-f96fbdcbb8a6" Version="1.0" Language="en-US" Publisher="Computer4"/>
-    <DisplayName>Abaddax.Utilities.Analyzers</DisplayName>
+    <Identity Id="Abaddax.Roslyn.Analyzers.52991400-4712-4471-8f0c-f96fbdcbb8a6" Version="1.0" Language="en-US" Publisher="Computer4"/>
+    <DisplayName>Abaddax.Roslyn.Analyzers</DisplayName>
     <Description xml:space="preserve">This is a sample diagnostic extension for the .NET Compiler Platform ("Roslyn").</Description>
   </Metadata>
   <Installation>
@@ -12,10 +12,10 @@
     <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
   </Dependencies>
   <Assets>
-    <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="Abaddax.Utilities.Analyzers" Path="|Abaddax.Utilities.Analyzers|"/>
-    <Asset Type="Microsoft.VisualStudio.Analyzer" d:Source="Project" d:ProjectName="Abaddax.Utilities.Analyzers" Path="|Abaddax.Utilities.Analyzers|"/>
-    <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="Abaddax.Utilities.Analyzers.CodeFixes" Path="|Abaddax.Utilities.Analyzers.CodeFixes|"/>
-    <Asset Type="Microsoft.VisualStudio.Analyzer" d:Source="Project" d:ProjectName="Abaddax.Utilities.Analyzers.CodeFixes" Path="|Abaddax.Utilities.Analyzers.CodeFixes|"/>
+    <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="Abaddax.Roslyn.Analyzers" Path="|Abaddax.Roslyn.Analyzers|"/>
+    <Asset Type="Microsoft.VisualStudio.Analyzer" d:Source="Project" d:ProjectName="Abaddax.Roslyn.Analyzers" Path="|Abaddax.Roslyn.Analyzers|"/>
+    <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="Abaddax.Roslyn.Analyzers.CodeFixes" Path="|Abaddax.Roslyn.Analyzers.CodeFixes|"/>
+    <Asset Type="Microsoft.VisualStudio.Analyzer" d:Source="Project" d:ProjectName="Abaddax.Roslyn.Analyzers.CodeFixes" Path="|Abaddax.Roslyn.Analyzers.CodeFixes|"/>
   </Assets>
   <Prerequisites>
     <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0,)" DisplayName="Visual Studio core editor" />

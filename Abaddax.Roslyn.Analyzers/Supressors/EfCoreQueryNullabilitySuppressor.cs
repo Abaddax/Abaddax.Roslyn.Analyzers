@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
 
-namespace Abaddax.Utilities.Analyzers.Supressors
+namespace Abaddax.Roslyn.Analyzers.Supressors
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class EfCoreQueryNullabilitySuppressor : DiagnosticSuppressor

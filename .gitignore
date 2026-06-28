@@ -481,6 +481,6 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 # Added by Abaddax.Build.Common
-/Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers/.editorconfig
+/Abaddax.Roslyn.Analyzers/.editorconfig
 # Added by Abaddax.Build.Common
-/Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers.CodeFixes/.editorconfig
+/Abaddax.Roslyn.Analyzers.CodeFixes/.editorconfig
