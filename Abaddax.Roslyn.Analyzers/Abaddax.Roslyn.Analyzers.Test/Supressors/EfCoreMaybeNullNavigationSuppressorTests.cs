@@ -8,73 +8,58 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
     public sealed class EfCoreMaybeNullNavigationSuppressorTests
         : SuppressorTestBase<EfCoreMaybeNullNavigationSuppressor>
     {
-        private const string _efCoreStubs =
-            """
-            using System;
-            using System.Collections;
-            using System.Collections.Generic;
-            using System.Diagnostics.CodeAnalysis;
-            using System.Linq;
-            using System.Linq.Expressions;
-            using System.Threading;
-            using System.Threading.Tasks;
-            using Microsoft.EntityFrameworkCore;
-            using Microsoft.EntityFrameworkCore.Query;
-            
-            #pragma warning disable CS1591
-            #nullable enable
-            
-            //Stub code
-            namespace Microsoft.EntityFrameworkCore
-            {
-                public class DbContext;
-                public class DbSet<TEntity> : IQueryable<TEntity>
-                    where TEntity : class
-                {
-                    Type IQueryable.ElementType => throw new NotImplementedException();
-                    Expression IQueryable.Expression => throw new NotImplementedException();
-                    IQueryProvider IQueryable.Provider => throw new NotImplementedException();
-                    IEnumerator<TEntity> IEnumerable<TEntity>.GetEnumerator() => throw new NotImplementedException();
-                    IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
-                }
-                public static class EntityFrameworkQueryableExtensions
-                {
-                    public static IIncludableQueryable<TEntity, TProperty> Include<TEntity, TProperty>(
-                        this IQueryable<TEntity> source,
-                        Expression<Func<TEntity, TProperty>> navigationPropertyPath)
-                        where TEntity : class => throw new NotImplementedException();
-                    public static IIncludableQueryable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
-                        this IIncludableQueryable<TEntity, TPreviousProperty> source,
-                        Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath) 
-                        where TEntity : class => throw new NotImplementedException();
-                    public static Task<TSource> FirstAsync<TSource>(
-                        this IQueryable<TSource> source,
-                        CancellationToken cancellationToken = default) => throw new NotImplementedException();
-                }
-                namespace Query
-                {
-                    public interface IIncludableQueryable<out TEntity, out TProperty> : IQueryable<TEntity>;
-                }
-            }
-            """;
-
         protected override void SetupTestState(SolutionState state)
         {
-            state.AnalyzerConfigFiles.Add(("/.editorconfig",
-                    $"""
-                    root = true
-
-                    [*.cs]
-                    dotnet_code_quality.{AnalyzerIdentifiers.EfCoreDereferencePossibleNullReferenceSuppression}.enabled = true
-                    """));
-            base.SetupTestState(state);
-        }
-
-        [Test]
-        public async Task ShouldSuppressIfIncluded()
-        {
-            var source = _efCoreStubs +
+            state.Sources.Add("""
+                global using System;
+                global using System.Collections;
+                global using System.Collections.Generic;
+                global using System.Diagnostics.CodeAnalysis;
+                global using System.Linq;
+                global using System.Linq.Expressions;
+                global using System.Threading;
+                global using System.Threading.Tasks;
+                global using Microsoft.EntityFrameworkCore;
+                global using Microsoft.EntityFrameworkCore.Query;
+                """);
+            state.Sources.Add(
                 """
+                namespace Microsoft.EntityFrameworkCore
+                {
+                    public class DbContext;
+                    public class DbSet<TEntity> : IQueryable<TEntity>
+                        where TEntity : class
+                    {
+                        Type IQueryable.ElementType => throw new NotImplementedException();
+                        Expression IQueryable.Expression => throw new NotImplementedException();
+                        IQueryProvider IQueryable.Provider => throw new NotImplementedException();
+                        IEnumerator<TEntity> IEnumerable<TEntity>.GetEnumerator() => throw new NotImplementedException();
+                        IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
+                    }
+                    public static class EntityFrameworkQueryableExtensions
+                    {
+                        public static IIncludableQueryable<TEntity, TProperty> Include<TEntity, TProperty>(
+                            this IQueryable<TEntity> source,
+                            Expression<Func<TEntity, TProperty>> navigationPropertyPath)
+                            where TEntity : class => throw new NotImplementedException();
+                        public static IIncludableQueryable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
+                            this IIncludableQueryable<TEntity, TPreviousProperty> source,
+                            Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath) 
+                            where TEntity : class => throw new NotImplementedException();
+                        public static Task<TSource> FirstAsync<TSource>(
+                            this IQueryable<TSource> source,
+                            CancellationToken cancellationToken = default) => throw new NotImplementedException();
+                    }
+                    namespace Query
+                    {
+                        public interface IIncludableQueryable<out TEntity, out TProperty> : IQueryable<TEntity>;
+                    }
+                }
+                """);
+            state.Sources.Add(
+                """
+                #nullable enable
+
                 namespace TestNamespace
                 {
                     public class TestContext : DbContext
@@ -89,7 +74,30 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
                         }
                         public DbSet<TestEntity> Persons { get; set; } = new();
                     }
+                }
+                """);
+            state.AnalyzerConfigFiles.Add(("/.editorconfig",
+                    $"""
+                    root = true
 
+                    [*.cs]
+                    dotnet_code_quality.{AnalyzerIdentifiers.EfCoreDereferencePossibleNullReferenceSuppression}.enabled = true
+
+                    [*.cs]
+                    dotnet_diagnostic.CS1591.severity = none
+                    """));
+            base.SetupTestState(state);
+        }
+
+        [Test]
+        public async Task ShouldSuppressIfIncluded()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
                     public class Test
                     {
                         public void Func()
@@ -114,23 +122,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldSuppressIfIncludedChain()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public void Func()
@@ -161,23 +158,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldSuppressIfIncludedAsync()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public async Task FuncAsync(CancellationToken cancellationToken)
@@ -202,23 +188,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldSuppressIfIncludedChainAsync()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public async Task FuncAsync()
@@ -250,23 +225,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldNotSuppressIfNotIncluded()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public void Func()
@@ -291,23 +255,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldNotSuppressIfNotIncludedChain()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public void Func()
@@ -338,23 +291,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldNotSuppressIfNotIncludedAsync()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public async Task FuncAsync(CancellationToken cancellationToken)
@@ -379,23 +321,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldNotSuppressIfNotIncludedChainAsync()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public async Task FuncAsync()
@@ -427,25 +358,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldNotSuppressIfSelectProjection()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
-                    #pragma warning disable CS0162
-
                     public class Test
                     {
                         public void Func()
@@ -471,25 +389,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldSuppressIfIncludedSelectProperty()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
-                    #pragma warning disable CS0162
-
                     public class Test
                     {
                         public void Func()
@@ -521,25 +426,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldNotSuppressIfNotIncludedSelectProperty()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
-                    #pragma warning disable CS0162
-
                     public class Test
                     {
                         public void Func()
@@ -570,25 +462,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldSuppressIfIncludedInEnumerable()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
-                    #pragma warning disable CS0162
-
                     public class Test
                     {
                         public void Func()
@@ -613,32 +492,19 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
                     .WithLocation(0)
                     .WithIsSuppressed(true),
                 DiagnosticResult.CompilerWarning("CS8602")
-                .WithLocation(1)
-                .WithIsSuppressed(true)
+                    .WithLocation(1)
+                    .WithIsSuppressed(true)
             );
         }
         [Test]
         public async Task ShouldSuppressIfIncludedInEnumerableFiltered()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
-                    #pragma warning disable CS0162
-
                     public class Test
                     {
                         public void Func()
@@ -658,7 +524,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
                 """;
 
             await VerifySuppressorAsync(source,
-                 DiagnosticResult.CompilerWarning("CS8602")
+                DiagnosticResult.CompilerWarning("CS8602")
                     .WithLocation(0)
                     .WithIsSuppressed(true)
                 );
@@ -666,25 +532,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldNotSuppressIfIncludedInEnumerableSelectProjection()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
-                    #pragma warning disable CS0162
-
                     public class Test
                     {
                         public void Func()
@@ -704,33 +557,20 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
                 """;
 
             await VerifySuppressorAsync(source,
-                 DiagnosticResult.CompilerWarning("CS8602")
-                     .WithLocation(0)
-                     .WithIsSuppressed(false)
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(false)
                 );
         }
         [Test]
         public async Task ShouldSuppressIfIncludedInEnumerableSelectProperty()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
-                    #pragma warning disable CS0162
-
                     public class Test
                     {
                         public void Func()
@@ -764,25 +604,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldNotSuppressIfNotIncludedInEnumerableSelectProperty()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
-                    #pragma warning disable CS0162
-
                     public class Test
                     {
                         public void Func()
@@ -815,23 +642,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldSuppressIfVariableAssignedFromIncluded()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public void Func()
@@ -864,23 +680,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldSuppressIfVariableAssignedFromIncludedAsync()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public async Task FuncAsync()
@@ -915,23 +720,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldSuppressIfMultipleIncludes()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public void Func()
@@ -981,23 +775,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldSuppressIfCasted()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public void Func()
@@ -1031,23 +814,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldNotSuppressIfReassignedAfterQuery()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public void Func()
@@ -1083,23 +855,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldNotSuppressIfAssignedInBranch()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     public class Test
                     {
                         public void Func()
@@ -1133,23 +894,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldSuppressIfAssignedInAlwaysReachableBranch()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
                     #pragma warning disable CS0162
 
                     public class Test
@@ -1185,25 +935,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldNotSuppressIfReassignedInLoop()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
-                    #pragma warning disable CS0162
-
                     public class Test
                     {
                         public void Func()
@@ -1233,25 +970,12 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
         [Test]
         public async Task ShouldNotSuppressIfAccessedAfterCatch()
         {
-            var source = _efCoreStubs +
+            var source =
                 """
+                #nullable enable
+
                 namespace TestNamespace
                 {
-                    public class TestContext : DbContext
-                    {
-                        public class TestEntity
-                        {
-                            [MaybeNull]
-                            public TestEntity Mother { get; set; }
-                            [MaybeNull]
-                            public TestEntity Father { get; set; }
-                            public List<TestEntity> Childs { get; set; } = new();
-                        }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
-                    }
-
-                    #pragma warning disable CS0162
-
                     public class Test
                     {
                         public void Func()

@@ -9,14 +9,22 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
     public sealed class EfCorePreferAsyncCallAnalyzerTests
          : AnalyzerTestBase<EfCorePreferAsyncCallAnalyzer>
     {
+        protected override void SetupTestState(SolutionState state)
+        {
+            state.Sources.Add(
+                """
+                global using System.Linq;
+                global using System.Threading.Tasks;
+                """);
+
+            base.SetupTestState(state);
+        }
+
         [Test]
         public async Task ShouldSuggestAsyncOverloadIfIQueryable()
         {
             var source =
                 """
-                using System.Linq;
-                using System.Threading.Tasks;
-
                 namespace TestNamespace
                 {
                     public class Test
@@ -40,9 +48,6 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
         {
             var source =
                 """
-                using System.Linq;
-                using System.Threading.Tasks;
-
                 namespace TestNamespace
                 {
                     public class Test
@@ -63,9 +68,6 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
         {
             var source =
                 """
-                using System.Linq;
-                using System.Threading.Tasks;
-
                 namespace TestNamespace
                 {
                     public class Test

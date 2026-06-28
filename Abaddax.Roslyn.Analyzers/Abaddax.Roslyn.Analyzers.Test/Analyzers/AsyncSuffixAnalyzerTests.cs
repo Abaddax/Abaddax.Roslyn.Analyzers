@@ -9,13 +9,52 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
     public sealed class AsyncSuffixAnalyzerTests
         : AnalyzerTestBase<AsyncSuffixAnalyzer>
     {
+        protected override void SetupTestState(SolutionState state)
+        {
+            state.Sources.Add(
+                """
+                global using System;
+                global using System.Threading.Tasks;
+                global using Microsoft.AspNetCore.Mvc;
+                global using Microsoft.VisualStudio.TestTools.UnitTesting;
+                global using NUnit.Framework;
+                global using Xunit;
+                """); ;
+            state.Sources.Add(
+                """
+                namespace Microsoft.AspNetCore.Mvc
+                {
+                    public abstract class ControllerBase;
+                }
+                namespace Microsoft.VisualStudio.TestTools.UnitTesting
+                {
+                    public class TestMethodAttribute : Attribute;
+                }
+                namespace NUnit.Framework
+                {
+                    public class TestAttribute : Attribute;
+                }
+                namespace Xunit
+                {
+                    public class FactAttribute : Attribute;
+                }
+                """);
+            state.AnalyzerConfigFiles.Add(("/.editorconfig",
+                   $"""
+                    root = true
+
+                    [*.cs]
+                    dotnet_code_quality.{AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer}.ignore_controller = true
+                    dotnet_code_quality.{AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer}.ignore_tests = true
+                    """));
+            base.SetupTestState(state);
+        }
+
         [Test]
         public async Task ShouldReportIfTask()
         {
             var source =
                 """
-                using System.Threading.Tasks;
-
                 namespace TestNamespace
                 {
                     public class Test
@@ -43,8 +82,6 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
         {
             var source =
                 """
-                using System.Threading.Tasks;
-
                 namespace TestNamespace
                 {
                     public class Test
@@ -72,8 +109,6 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
         {
             var source =
                 """
-                using System.Threading.Tasks;
-
                 namespace TestNamespace
                 {
                     public class Test
@@ -94,8 +129,6 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
         {
             var source =
                 """
-                using System.Threading.Tasks;
-
                 namespace TestNamespace
                 {
                     public static class Program
@@ -115,16 +148,6 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
         {
             var source =
                 """
-                using System.Threading.Tasks;
-                using Microsoft.AspNetCore.Mvc;
-
-                //Stub code
-                namespace Microsoft.AspNetCore.Mvc
-                {
-                    public abstract class ControllerBase;
-                }
-
-                //Actual test
                 namespace TestNamespace
                 {
                     public class Api : ControllerBase
@@ -137,43 +160,13 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
                 }
                 """;
 
-            await VerifyAnalyzerAsync(source, state =>
-            {
-                state.AnalyzerConfigFiles.Add(("/.editorconfig",
-                    $"""
-                    root = true
-
-                    [*.cs]
-                    dotnet_code_quality.{AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer}.ignore_controller = true
-                    """));
-            });
+            await VerifyAnalyzerAsync(source);
         }
         [Test]
         public async Task ShouldNotReportIfTestMethod()
         {
             var source =
                 """
-                using System;
-                using System.Threading.Tasks;
-                using Microsoft.VisualStudio.TestTools.UnitTesting;
-                using NUnit.Framework;
-                using Xunit;
-
-                //Stub code
-                namespace Microsoft.VisualStudio.TestTools.UnitTesting
-                {
-                    public class TestMethodAttribute : Attribute;
-                }
-                namespace NUnit.Framework
-                {
-                    public class TestAttribute : Attribute;
-                }
-                namespace Xunit
-                {
-                    public class FactAttribute : Attribute;
-                }
-
-                //Actual test
                 namespace TestNamespace
                 {
                     public class Test
@@ -197,16 +190,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
                 }
                 """;
 
-            await VerifyAnalyzerAsync(source, state =>
-            {
-                state.AnalyzerConfigFiles.Add(("/.editorconfig",
-                    $"""
-                    root = true
-
-                    [*.cs]
-                    dotnet_code_quality.{AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer}.ignore_tests = true
-                    """));
-            });
+            await VerifyAnalyzerAsync(source);
         }
 
     }

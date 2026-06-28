@@ -9,6 +9,17 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
     public sealed class SuggestAsyncOverloadAnalyzerTests
         : AnalyzerTestBase<SuggestAsyncOverloadAnalyzer>
     {
+        protected override void SetupTestState(SolutionState state)
+        {
+            state.Sources.Add(
+                """
+                global using System.Linq;
+                global using System.Threading.Tasks;
+                """);
+
+            base.SetupTestState(state);
+        }
+
         [Test]
         public async Task ShouldSuggestAsyncOverloadIfDirectCall()
         {
