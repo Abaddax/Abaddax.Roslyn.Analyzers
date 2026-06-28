@@ -10,7 +10,7 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
         {
             if (expression.IgnoreNullSuppression() is CastExpressionSyntax cast)
                 return IgnoreCasts(cast.Expression);
-            if(expression is BinaryExpressionSyntax binary && binary.IsKind(SyntaxKind.AsExpression))
+            if (expression is BinaryExpressionSyntax binary && binary.IsKind(SyntaxKind.AsExpression))
                 return IgnoreCasts(binary.Left);
             return expression;
         }
@@ -21,7 +21,7 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
             return expression;
         }
 
-        public static MethodDeclarationSyntax? GetCurrentMethodDeclarationBlock(this ExpressionSyntax expression)
+        public static MethodDeclarationSyntax? GetContainingMethodDeclarationBlock(this ExpressionSyntax expression)
         {
             return expression
                 .Ancestors()

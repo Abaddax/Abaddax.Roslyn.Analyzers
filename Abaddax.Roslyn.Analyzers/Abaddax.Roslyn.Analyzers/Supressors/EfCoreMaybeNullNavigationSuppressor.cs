@@ -3,7 +3,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using static Abaddax.Roslyn.Analyzers.Extensions.ExpressionSyntaxHelper;
 
 namespace Abaddax.Roslyn.Analyzers.Supressors
@@ -46,26 +45,17 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 var root = tree.GetRoot(context.CancellationToken);
                 var node = root.FindNode(diagnostic.Location.SourceSpan);
 
-                if (!Debugger.IsAttached)
-                    Debugger.Launch();
-
                 if (node is ArgumentSyntax argumentSyntax)
                     node = argumentSyntax.Expression;
-                if (node is not ExpressionSyntax expression)
+                if (node is not ExpressionSyntax)
                     continue;
 
                 var semanticModel = context.GetSemanticModel(tree);
-                var origin = ExpressionSyntaxHelper.TryExpand(expression, semanticModel, context.CancellationToken);
-                if (origin == null)
-                    continue;
-#if DEBUG
-                var x = origin.ToFullString();
-#endif
 
                 //Unwrap variable assignments
                 if (node is IdentifierNameSyntax identifier)
                 {
-                    node = ExpressionSyntaxHelper.TraverseAssignments(identifier, semanticModel, context.CancellationToken);
+                    node = TraverseAssignments(identifier, semanticModel, context.CancellationToken);
                 }
                 //Unwarp awaits
                 if (node is AwaitExpressionSyntax asyncAccess)
@@ -80,6 +70,10 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                     if (symbol is IPropertySymbol propertySymbol &&
                         HasMaybeNullAttribute(propertySymbol))
                     {
+                        var origin = TryExpand(memberAccess, semanticModel, context.CancellationToken);
+                        if (origin == null)
+                            continue;
+
                         //2. Trace the variable back to see if it was included
                         if (IsPropertyIncludedInQuery(origin, semanticModel, context.CancellationToken))
                         {
@@ -97,19 +91,28 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 // Direct variable access e.g. when query.Select(x => x.Prop).A
                 if (node is InvocationExpressionSyntax invocation)
                 {
-                    //1. Check if from EF query                    
-                    if (invocation.IsCalledFromDbContext(semanticModel, context.CancellationToken))
+                    //1. Check if the select points to property with [MaybeNull] attribute
+                    if (IsMaybeNullProperySelection(invocation, semanticModel, context.CancellationToken))
                     {
-                        //2. Find Select
-                        if (CheckQueryChainForSelect(invocation, semanticModel, context.CancellationToken))
+                        var origin = TryExpand(invocation, semanticModel, context.CancellationToken);
+                        if (origin == null)
+                            continue;
+
+                        //1. Check if from EF query
+                        _ = BuildPropertyChain(origin, semanticModel, context.CancellationToken, out var isCalledFromDbContext);
+                        if (isCalledFromDbContext)
                         {
-                            //Condition met! Suppress the warning.
-                            var descriptor = SupportedSuppressions
-                                .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
-                            if (descriptor != null)
+                            //2. Trace the variable back to see if it was included
+                            if (IsPropertyIncludedInQuery(origin, semanticModel, context.CancellationToken))
                             {
-                                context.ReportSuppression(
-                                    Suppression.Create(descriptor, diagnostic));
+                                //Condition met! Suppress the warning.
+                                var descriptor = SupportedSuppressions
+                                    .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
+                                if (descriptor != null)
+                                {
+                                    context.ReportSuppression(
+                                        Suppression.Create(descriptor, diagnostic));
+                                }
                             }
                         }
                     }
@@ -117,38 +120,115 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             }
         }
 
+        /// <summary>
+        /// Look for [MaybeNull] on property
+        /// </summary>
         private static bool HasMaybeNullAttribute(IPropertySymbol propertySymbol)
         {
             return propertySymbol.GetAttributes()
                 .Any(attr => attr.AttributeClass?.HasName("MaybeNullAttribute", "System.Diagnostics.CodeAnalysis") ?? false);
         }
+        /// <summary>
+        /// Check if the <paramref name="origin"/> path is included in the query
+        /// </summary>
         private static bool IsPropertyIncludedInQuery(
             ExpressionOrigin origin,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
-            List<string> propertyChain = new();
-            // Go back to the root of the expression blogs.Posts.Entries -> blogs
-            while (origin is MemberExpressionOrigin parentMemberAccess)
-            {
-                propertyChain.Add(parentMemberAccess.Member.Name);
-                origin = parentMemberAccess.Receiver;
-            }
-            if (origin is AsyncSyntaxExpressionOrigin asyncOrigin)
-                origin = asyncOrigin.Receiver;
-            if (origin is not SyntaxExpressionOrigin expressionOrigin)
-                return false;
-
-            var queryExpression = expressionOrigin.Syntax;
-
-            if (!queryExpression.IsCalledFromDbContext(semanticModel, cancellationToken))
+            var propertyChain = BuildPropertyChain(origin, semanticModel, cancellationToken,
+                out var isCalledFromDbContext);
+            if (!isCalledFromDbContext)
                 return false;
 
             // Analyze the EF Core Linq chain
-            return CheckQueryChainForInclude(queryExpression, propertyChain.ToArray(), semanticModel, cancellationToken);
+            return CheckQueryChainForInclude(origin, propertyChain.ToArray(), semanticModel, cancellationToken);
         }
+        /// <summary>
+        /// Build the property path referenced by <paramref name="origin"/>
+        /// </summary>
+        /// <returns>Propery-Chain. Items are in reverse! So x.A.B -> [B,A]</returns>
+        private static string[] BuildPropertyChain(
+            ExpressionOrigin origin,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken,
+            out bool isCalledFromDbContext)
+        {
+            List<string> propertyChain = new();
+            // Go back to the root (DbSet) of the expression blogs.Posts.Entries -> blogs
+            while (origin is not SyntaxExpressionOrigin)
+            {
+                switch (origin)
+                {
+                    case MemberExpressionOrigin parentMemberAccess:
+                    {
+                        if (parentMemberAccess.Member is IPropertySymbol property &&
+                            !property.Type.IsDbSet())
+                        {
+                            propertyChain.Add(property.Name);
+                        }
+                        origin = parentMemberAccess.Receiver;
+                        continue;
+                    }
+                    case InvocationSyntaxExpressionOrigin invocation
+                        when invocation.Invocation.Expression is MemberAccessExpressionSyntax methodAccess:
+                    {
+                        var symbol = semanticModel
+                            .GetSymbolInfo(methodAccess, cancellationToken)
+                            .Symbol;
+
+                        if (symbol is IMethodSymbol method)
+                        {
+                            if (method.HasName("Select", "System.Linq", "Queryable") ||
+                                method.HasName("Select", "System.Linq", "Enumerable") ||
+                                method.HasName("SelectMany", "System.Linq", "Queryable") ||
+                                method.HasName("SelectMany", "System.Linq", "Enumerable"))
+                            {
+                                // Check if the argument points to our property (e.g., b => b.Posts)
+                                var argument = invocation.Invocation.ArgumentList.Arguments.FirstOrDefault();
+                                if (argument?.Expression is SimpleLambdaExpressionSyntax lambda &&
+                                    lambda.Body is ExpressionSyntax bodyExpression)
+                                {
+                                    if (bodyExpression.IgnoreCasts().IgnoreNullSuppression() is MemberAccessExpressionSyntax lambdaMember)
+                                    {
+                                        var selectedMemberSymbol = semanticModel.GetSymbolInfo(lambdaMember, cancellationToken).Symbol;
+                                        if (selectedMemberSymbol is IPropertySymbol selectedProperty)
+                                        {
+                                            propertyChain.Add(selectedProperty.Name);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        origin = invocation.Receiver;
+                        continue;
+                    }
+                    case ForwardingExpressionOrigin forwarding:
+                    {
+                        origin = forwarding.Receiver;
+                        continue;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (origin is not SyntaxExpressionOrigin expressionRoot ||
+               !expressionRoot.Syntax.IsCalledFromDbContext(semanticModel, cancellationToken))
+            {
+                isCalledFromDbContext = false;
+                return [];
+            }
+            isCalledFromDbContext = true;
+            return propertyChain.ToArray();
+        }
+        /// <summary>
+        /// Check if the <paramref name="origin"/> in included in the query via Include/ThenInclude
+        /// </summary>
         private static bool CheckQueryChainForInclude(
-            ExpressionSyntax expression,
+            ExpressionOrigin origin,
             string[] propertyChain,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
@@ -157,90 +237,116 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 return false;
 
             // Walk down the method invocation chain (e.g., context.Blogs.Include(...).Where(...))
-            var current = expression;
+            var current = origin;
             var currentPropertyChain = propertyChain.ToList();
-            while (current is InvocationExpressionSyntax invocation)
+            while (current is not SyntaxExpressionOrigin and not null)
             {
-                if (invocation.Expression is MemberAccessExpressionSyntax methodAccess)
+                switch (current)
                 {
-                    var symbol = semanticModel
-                        .GetSymbolInfo(methodAccess, cancellationToken)
-                        .Symbol;
-
-                    if (symbol is IMethodSymbol method)
+                    case InvocationSyntaxExpressionOrigin invocationOrigin:
                     {
-                        if (method.HasName("Include", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions") &&
-                           currentPropertyChain.Count == 1)
+                        var invocation = invocationOrigin.Invocation;
+                        if (invocation.Expression is MemberAccessExpressionSyntax methodAccess)
                         {
-                            if (CheckIncludeProperty(invocation))
-                                return true;
-                            //Current Include.ThenInclude chain finished -> reset
-                            currentPropertyChain = propertyChain.ToList();
-                        }
-                        else if (method.HasName("ThenInclude", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions") &&
-                            currentPropertyChain.Count > 1)
-                        {
-                            if (CheckIncludeProperty(invocation))
-                                return true;
-                        }
-                        else if (method.HasName("Select", "System.Linq", "Queryable") || method.HasName("SelectMany", "System.Linq", "Queryable"))
-                        {
-                            if (!CheckSelectProperty(invocation))
-                                return false; //Unsupported Select syntax -> abort
-                        }
-                    }
+                            var symbol = semanticModel
+                                .GetSymbolInfo(methodAccess, cancellationToken)
+                                .Symbol;
 
-                    // Move up the chain
-                    current = methodAccess.Expression;
-
-                    bool CheckIncludeProperty(InvocationExpressionSyntax invocation)
-                    {
-                        // Check if the argument points to our property (e.g., b => b.Posts)
-                        var argument = invocation.ArgumentList.Arguments.FirstOrDefault();
-                        if (argument?.Expression is SimpleLambdaExpressionSyntax lambda &&
-                            lambda.Body is ExpressionSyntax bodyExpression)
-                        {
-                            if (bodyExpression.IgnoreCasts().IgnoreNullSuppression() is MemberAccessExpressionSyntax lambdaMember)
+                            if (symbol is IMethodSymbol method)
                             {
-                                // Found one layer of the property path
-                                if (currentPropertyChain[0] == lambdaMember.Name.Identifier.Text)
-                                    currentPropertyChain.RemoveAt(0);
-                                // Found full property path
-                                if (currentPropertyChain.Count == 0)
-                                    return true;
+                                if (method.HasName("Include", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions") &&
+                                   currentPropertyChain.Count == 1)
+                                {
+                                    if (CheckIncludeProperty(invocation))
+                                        return true;
+                                    //Current Include.ThenInclude chain finished -> reset
+                                    currentPropertyChain = propertyChain.ToList();
+                                }
+                                else if (method.HasName("ThenInclude", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions") &&
+                                    currentPropertyChain.Count > 1)
+                                {
+                                    if (CheckIncludeProperty(invocation))
+                                        return true;
+                                }
+                                else if (method.HasName("Select", "System.Linq", "Queryable") || method.HasName("SelectMany", "System.Linq", "Queryable"))
+                                {
+                                    var result = CheckSelectProperty(invocation);
+                                    if (result == null)
+                                        return false; //Unsupported Select syntax -> abort
+                                    if (result == true)
+                                        return true;
+                                }
+                            }
+
+                            // Move up the chain
+                            current = invocationOrigin.Receiver;
+                            break;
+
+                            bool CheckIncludeProperty(InvocationExpressionSyntax invocation)
+                            {
+                                // Check if the argument points to our property (e.g., b => b.Posts)
+                                var argument = invocation.ArgumentList.Arguments.FirstOrDefault();
+                                if (argument?.Expression is SimpleLambdaExpressionSyntax lambda &&
+                                    lambda.Body is ExpressionSyntax bodyExpression)
+                                {
+                                    if (bodyExpression.IgnoreCasts().IgnoreNullSuppression() is MemberAccessExpressionSyntax lambdaMember)
+                                    {
+                                        // Found one layer of the property path
+                                        if (currentPropertyChain[0] == lambdaMember.Name.Identifier.Text)
+                                            currentPropertyChain.RemoveAt(0);
+                                        // Found full property path
+                                        if (currentPropertyChain.Count == 0)
+                                            return true;
+                                    }
+                                }
+                                return false;
+                            }
+                            bool? CheckSelectProperty(InvocationExpressionSyntax invocation)
+                            {
+                                // Check if the argument points to our property (e.g., b => b.Posts)
+                                var argument = invocation.ArgumentList.Arguments.FirstOrDefault();
+                                if (argument?.Expression is SimpleLambdaExpressionSyntax lambda &&
+                                    lambda.Body is ExpressionSyntax bodyExpression)
+                                {
+                                    if (bodyExpression.IgnoreCasts().IgnoreNullSuppression() is MemberAccessExpressionSyntax lambdaMember)
+                                    {
+                                        // Found one layer of the property path
+                                        if (currentPropertyChain[0] == lambdaMember.Name.Identifier.Text)
+                                            currentPropertyChain.RemoveAt(0);
+                                        // Found full property path
+                                        if (currentPropertyChain.Count == 0)
+                                            return true;
+                                        return false;
+                                    }
+                                }
+                                return null;
                             }
                         }
-                        return false;
-                    }
-                    bool CheckSelectProperty(InvocationExpressionSyntax invocation)
-                    {
-                        // Check if the argument points to our property (e.g., b => b.Posts)
-                        var argument = invocation.ArgumentList.Arguments.FirstOrDefault();
-                        if (argument?.Expression is SimpleLambdaExpressionSyntax lambda &&
-                            lambda.Body is ExpressionSyntax bodyExpression)
+                        else
                         {
-                            if (bodyExpression.IgnoreCasts().IgnoreNullSuppression() is MemberAccessExpressionSyntax lambdaMember)
-                            {
-                                // Selected one layer of the property path -> append to chain
-                                var chain = propertyChain.ToList();
-                                chain.Add(lambdaMember.Name.Identifier.Text);
-                                propertyChain = chain.ToArray();
-                                // Reset current chain
-                                currentPropertyChain = chain;
-                                return true;
-                            }
+                            break;
                         }
-                        return false;
                     }
-                }
-                else
-                {
-                    break;
+                    case MemberExpressionOrigin parentMemberAccess:
+                    {
+                        current = parentMemberAccess.Receiver;
+                        break;
+                    }
+                    case ForwardingExpressionOrigin forwarding:
+                    {
+                        current = forwarding.Receiver;
+                        continue;
+                    }
+                    default:
+                    {
+                        current = null;
+                        break;
+                    }
                 }
             }
             return false;
         }
-        private static bool CheckQueryChainForSelect(
+        private static bool IsMaybeNullProperySelection(
             ExpressionSyntax expression,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
@@ -257,7 +363,8 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
 
                     if (symbol is IMethodSymbol method)
                     {
-                        if (method.HasName("Select", "System.Linq", "Queryable"))
+                        if (method.HasName("Select", "System.Linq", "Queryable") ||
+                            method.HasName("Select", "System.Linq", "Enumerable"))
                         {
                             // Check if the argument points to our property (e.g., b => b.Posts)
                             var argument = invocation.ArgumentList.Arguments.FirstOrDefault();
@@ -271,7 +378,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                                         return true;
                                 }
                             }
-                            return true;
+                            return false;
                         }
                     }
 
@@ -285,6 +392,5 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             }
             return false;
         }
-
     }
 }

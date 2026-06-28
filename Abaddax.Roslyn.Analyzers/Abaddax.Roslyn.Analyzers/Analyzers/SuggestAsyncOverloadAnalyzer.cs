@@ -33,7 +33,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
         {
             var invocation = (InvocationExpressionSyntax)context.Node;
 
-            var methodBlock = invocation.GetCurrentMethodDeclarationBlock();
+            var methodBlock = invocation.GetContainingMethodDeclarationBlock();
             if (methodBlock == null)
                 return;
             if (context.SemanticModel.GetDeclaredSymbol(methodBlock) is not IMethodSymbol callerSymbol)

@@ -33,5 +33,17 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
             }
             return false;
         }
+        public static bool IsDbSet(this ITypeSymbol? type)
+        {
+            var current = type;
+            while (current != null)
+            {
+                if (current.HasName("DbSet", "Microsoft.EntityFrameworkCore"))
+                    return true;
+                current = current.BaseType;
+            }
+            return false;
+        }
+
     }
 }
