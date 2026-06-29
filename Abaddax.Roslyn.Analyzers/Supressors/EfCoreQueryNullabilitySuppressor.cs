@@ -1,4 +1,3 @@
-using Abaddax.Roslyn.Analyzers;
 using Abaddax.Roslyn.Analyzers.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;

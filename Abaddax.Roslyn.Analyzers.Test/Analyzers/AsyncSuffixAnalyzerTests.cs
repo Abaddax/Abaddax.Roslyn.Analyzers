@@ -19,7 +19,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
                 global using Microsoft.VisualStudio.TestTools.UnitTesting;
                 global using NUnit.Framework;
                 global using Xunit;
-                """); ;
+                """);
             state.Sources.Add(
                 """
                 namespace Microsoft.AspNetCore.Mvc
