@@ -9,7 +9,6 @@
     <Version>0.0.1-preview1</Version>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -23,7 +22,9 @@
     <ProjectReference Include="..\Abaddax.Roslyn.Analyzers\Abaddax.Roslyn.Analyzers.csproj" />
   </ItemGroup>
 
-  <Target Name="_AddAnalyzersToOutput">
+  <Target Name="_AddAnalyzersToOutput"
+          AfterTargets="Build"
+          BeforeTargets="Pack">
     <ItemGroup>
       <TfmSpecificPackageFile Include="$(OutputPath)\Abaddax.Roslyn.Analyzers.dll" PackagePath="analyzers/dotnet/cs" />
       <TfmSpecificPackageFile Include="$(OutputPath)\Abaddax.Roslyn.Analyzers.CodeFixes.dll" PackagePath="analyzers/dotnet/cs" />

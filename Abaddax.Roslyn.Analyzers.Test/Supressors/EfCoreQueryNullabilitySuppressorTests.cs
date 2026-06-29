@@ -1,5 +1,5 @@
-﻿using Abaddax.Roslyn.Analyzers.Test.Helper;
-using Abaddax.Roslyn.Analyzers.Supressors;
+﻿using Abaddax.Roslyn.Analyzers.Supressors;
+using Abaddax.Roslyn.Analyzers.Test.Helper;
 using Microsoft.CodeAnalysis.Testing;
 using NUnit.Framework;
 
