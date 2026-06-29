@@ -6,7 +6,7 @@
     <DevelopmentDependency>true</DevelopmentDependency>
     <PackageId>Abaddax.Roslyn.Analyzers</PackageId>
     <PackageTags>Abaddax.Roslyn.Analyzers, analyzers</PackageTags>
-    <Version>0.0.1-preview1</Version>
+    <Version>0.0.1-preview2</Version>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
