@@ -1,0 +1,12 @@
+<Project>
+
+  <!-- Make options visable to analyzers -->
+  <ItemGroup>
+    <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX0002IgnoreControllers" />
+    <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX0002IgnoreTests" />
+    <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX1001Enable" />
+    <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX1002Enable" />
+    <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX1003Enable" />
+  </ItemGroup>
+
+</Project>

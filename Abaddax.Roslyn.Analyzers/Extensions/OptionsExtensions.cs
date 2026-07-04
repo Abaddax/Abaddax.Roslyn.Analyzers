@@ -11,8 +11,13 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
         }
         public static bool IsSet(this AnalyzerConfigOptions options, string diagnostic, string property, bool defaultValue = false)
         {
-            if (options.TryGetValue($"dotnet_code_quality.{diagnostic}.{property}", out var valueStr) &&
-               bool.TryParse(valueStr, out var value))
+            if (options.TryGetValue($"build_property.AbaddaxRoslynAnalyzers{diagnostic}{property.Replace("_", "")}".ToLowerInvariant(), out var valueStr) &&
+                bool.TryParse(valueStr, out var value))
+            {
+                return value;
+            }
+            if (options.TryGetValue($"dotnet_code_quality.{diagnostic}.{property}", out valueStr) &&
+               bool.TryParse(valueStr, out value))
             {
                 return value;
             }
