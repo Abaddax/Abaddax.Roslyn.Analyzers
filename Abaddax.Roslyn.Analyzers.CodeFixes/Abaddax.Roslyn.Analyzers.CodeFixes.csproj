@@ -1,9 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
     <IsPackable>false</IsPackable>
-    <RootNamespace>Abaddax.Roslyn.Analyzers</RootNamespace>
+    <RootNamespace>Abaddax.Roslyn.Analyzers.CodeFixes</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(Configuration)=='Debug'">
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +28,10 @@
   <ItemGroup>
     <Compile Update="Properties\CodeFixResources.Designer.cs" DesignTime="True" AutoGen="True" DependentUpon="CodeFixResources.resx" />
     <EmbeddedResource Update="Properties\CodeFixResources.resx" Generator="ResXFileCodeGenerator" LastGenOutput="CodeFixResources.Designer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Abaddax.Roslyn.Analyzers.Test" />
   </ItemGroup>
 
 </Project>

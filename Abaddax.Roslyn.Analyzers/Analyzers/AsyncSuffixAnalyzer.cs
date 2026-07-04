@@ -64,7 +64,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
         private static bool IsControllerActionMethod(IMethodSymbol method, AnalyzerConfigOptions options)
         {
             //Only if option is enabled
-            if (!options.IsSet(AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer, "ignore_controller"))
+            if (!options.IsSet(AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer, "ignore_controllers", defaultValue: true))
                 return false;
 
             if (!method.IsInsideController())
@@ -78,7 +78,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
         private static bool IsTestingMethod(IMethodSymbol method, AnalyzerConfigOptions options)
         {
             //Only if option is enabled
-            if (!options.IsSet(AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer, "ignore_tests"))
+            if (!options.IsSet(AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer, "ignore_tests", defaultValue: true))
                 return false;
 
             if (method.GetAttributes()

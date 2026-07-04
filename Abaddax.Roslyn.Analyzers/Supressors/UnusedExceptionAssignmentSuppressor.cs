@@ -35,7 +35,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                     continue;
 
                 var options = context.Options.GetGlobalOptions(tree);
-                if (!options.IsEnabled(AnalyzerIdentifiers.EfCoreDereferencePossibleNullReferenceSuppression, defaultValue: true))
+                if (!options.IsEnabled(AnalyzerIdentifiers.UnusedExceptionAssignmentSuppression, defaultValue: true))
                     continue;
 
                 var root = tree.GetRoot(context.CancellationToken);
