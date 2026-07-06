@@ -33,6 +33,12 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
         {
             var methodDecl = (MethodDeclarationSyntax)context.Node;
 
+            var location = methodDecl.GetLocation();
+            if (location?.SourceTree == null)
+                return;
+
+            var options = context.Options.GetGlobalOptions(location.SourceTree);
+
             var method = context.SemanticModel.GetDeclaredSymbol(methodDecl);
             if (method == null)
                 return;
@@ -46,9 +52,21 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             // Edge cases to ignore
             if (method.IsEntryPoint(context))
                 return;
+            if (IsTestingMethod(method, options))
+                return;
 
             var diagnostic = Diagnostic.Create(_Rule, methodDecl.Identifier.GetLocation(), method.Name);
             context.ReportDiagnostic(diagnostic);
         }
+
+        private static bool IsTestingMethod(IMethodSymbol method, AnalyzerConfigOptions options)
+        {
+            //Only if option is enabled
+            if (!options.IsSet(AnalyzerIdentifiers.AddCancellationTokenAnalyzer, "ignore_tests", defaultValue: true))
+                return false;
+
+            return method.IsTestingMethod();
+        }
+
     }
 }

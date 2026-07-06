@@ -81,19 +81,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             if (!options.IsSet(AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer, "ignore_tests", defaultValue: true))
                 return false;
 
-            if (method.GetAttributes()
-                .Any(attr =>
-                    //MSTest
-                    (attr.AttributeClass?.HasName("TestMethodAttribute", "Microsoft.VisualStudio.TestTools.UnitTesting") ?? false) ||
-                    //NUnit
-                    (attr.AttributeClass?.HasName("TestAttribute", "NUnit.Framework") ?? false) ||
-                    //XUnit
-                    (attr.AttributeClass?.HasName("FactAttribute", "Xunit") ?? false)))
-            {
-                return true;
-            }
-            return false;
-
+            return method.IsTestingMethod();
         }
     }
 }

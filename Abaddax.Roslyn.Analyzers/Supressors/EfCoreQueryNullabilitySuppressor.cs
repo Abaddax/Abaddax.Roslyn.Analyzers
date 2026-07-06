@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
+using static Abaddax.Roslyn.Analyzers.Extensions.ExpressionSyntaxHelper;
 
 namespace Abaddax.Roslyn.Analyzers.Supressors
 {
@@ -42,6 +43,8 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
 
                 var root = tree.GetRoot(context.CancellationToken);
                 var node = root.FindNode(diagnostic.Location.SourceSpan);
+                if (node is not ExpressionSyntax expression)
+                    return;
 
                 var invocation = node.FirstAncestorOrSelf<InvocationExpressionSyntax>();
                 if (invocation == null)
@@ -51,12 +54,15 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
 
                 if (IsInsideEfCoreQuery(invocation, semanticModel, context.CancellationToken))
                 {
-                    var descriptor = SupportedSuppressions
-                        .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
-                    if (descriptor != null)
+                    if (IsQueryDelegateParameter(invocation, expression, semanticModel, context.CancellationToken))
                     {
-                        context.ReportSuppression(
-                            Suppression.Create(descriptor, diagnostic));
+                        var descriptor = SupportedSuppressions
+                            .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
+                        if (descriptor != null)
+                        {
+                            context.ReportSuppression(
+                                Suppression.Create(descriptor, diagnostic));
+                        }
                     }
                 }
             }
@@ -81,6 +87,62 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 return true;
             if (extensionClass.HasName("Queryable", "System.Linq"))
                 return true;
+            return false;
+        }
+        private static bool IsQueryDelegateParameter(
+            InvocationExpressionSyntax invocation,
+            ExpressionSyntax expression,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
+        {
+            var argumentSyntax = expression.FirstAncestorOrSelf<ArgumentSyntax>();
+            var argument = invocation.ArgumentList.Arguments
+                .FirstOrDefault(x => ReferenceEquals(x, argumentSyntax));
+            if (argument == null)
+                return false; //Not from this invocation?
+            if (argument.Expression is not LambdaExpressionSyntax lambda)
+                return false;
+            //Get lambda parameters
+            var lambdaParameters = lambda switch
+            {
+                SimpleLambdaExpressionSyntax s => [semanticModel.GetDeclaredSymbol(s.Parameter, cancellationToken)],
+                ParenthesizedLambdaExpressionSyntax p => p.ParameterList.Parameters
+                    .Select(parameter => semanticModel.GetDeclaredSymbol(parameter, cancellationToken))
+                    .ToArray(),
+                _ => []
+            };
+            if (lambdaParameters.Length == 0)
+                return false;
+
+            //Find where the variable comes from
+            var origin = ExpressionSyntaxHelper.TryExpand(expression, semanticModel, cancellationToken);
+            while (origin is not SyntaxExpressionOrigin)
+            {
+                switch (origin)
+                {
+                    case MemberExpressionOrigin parentMemberAccess:
+                    {
+                        origin = parentMemberAccess.Receiver;
+                        break;
+                    }
+                    case ForwardingExpressionOrigin forwarding:
+                    {
+                        origin = forwarding.Receiver;
+                        continue;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+            if (origin is not SyntaxExpressionOrigin expressionRoot)
+                return false;
+
+            //Check if it matches a lamda parameter
+            var expressionRootSymbol = semanticModel.GetSymbolInfo(expressionRoot.Syntax, cancellationToken).Symbol;
+            if (lambdaParameters.Any(x => SymbolEqualityComparer.Default.Equals(x, expressionRootSymbol)))
+                return true; //Found -> suppress
             return false;
         }
     }
