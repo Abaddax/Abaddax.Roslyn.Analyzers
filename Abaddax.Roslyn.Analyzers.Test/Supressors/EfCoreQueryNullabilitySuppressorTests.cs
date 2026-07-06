@@ -146,5 +146,39 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
                     .WithIsSuppressed(false)
                 );
         }
+        [Test]
+        public async Task ShouldNotSuppressIfQueryExternalVariable()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var db = new TestContext();
+
+                            TestContext.TestEntity? entity = null;
+
+                            var q = db.Persons
+                                .Include(x => x.Mother)
+                                .Where(x => {|#0:x.Mother|}.Mother == {|#1:entity|}.Mother);
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(false)
+                );
+        }
+
     }
 }
