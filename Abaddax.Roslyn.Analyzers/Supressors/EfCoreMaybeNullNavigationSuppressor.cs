@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
-using static Abaddax.Roslyn.Analyzers.Extensions.ExpressionSyntaxHelper;
+using static Abaddax.Roslyn.Analyzers.Helper.ExpressionSyntaxHelper;
 
 namespace Abaddax.Roslyn.Analyzers.Supressors
 {
@@ -158,17 +158,24 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             CancellationToken cancellationToken,
             out bool isCalledFromDbContext)
         {
+            isCalledFromDbContext = false;
             List<string> propertyChain = new();
             // Go back to the root (DbSet) of the expression blogs.Posts.Entries -> blogs
-            while (origin is not SyntaxExpressionOrigin)
+            while (origin is not SyntaxExpressionOrigin && !isCalledFromDbContext)
             {
                 switch (origin)
                 {
                     case MemberExpressionOrigin parentMemberAccess:
                     {
-                        if (parentMemberAccess.Member is IPropertySymbol property &&
-                            !property.Type.IsDbSet())
+                        if (parentMemberAccess.Member is IPropertySymbol property)
                         {
+                            if (property.Type.IsDbSet() &&
+                                property.ContainingSymbol is INamedTypeSymbol containingClass &&
+                                containingClass.IsDbContext())
+                            {
+                                isCalledFromDbContext = true;
+                                break;
+                            }
                             propertyChain.Add(property.Name);
                         }
                         origin = parentMemberAccess.Receiver;
@@ -219,8 +226,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 }
             }
 
-            if (origin is not SyntaxExpressionOrigin expressionRoot ||
-               !expressionRoot.Syntax.IsCalledFromDbContext(semanticModel, cancellationToken))
+            if (!isCalledFromDbContext)
             {
                 isCalledFromDbContext = false;
                 return [];

@@ -9,18 +9,29 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
+            bool dbSetFound = false;
             var current = expression;
             while (true)
             {
                 if (current is InvocationExpressionSyntax invocation)
+                {
                     current = invocation.Expression;
+                }
                 else if (current is MemberAccessExpressionSyntax memberAccess)
+                {
                     current = memberAccess.Expression;
+                    var type = semanticModel.GetTypeInfo(current, cancellationToken).Type;
+                    if (!dbSetFound)
+                        dbSetFound = type.IsDbSet();
+                    else if (type.IsDbContext())
+                        return true;
+                }
                 else
+                {
                     break;
+                }
             }
-            var type = semanticModel.GetTypeInfo(current, cancellationToken).Type;
-            return type.IsDbContext();
+            return false;
         }
         public static bool IsDbContext(this ITypeSymbol? type)
         {

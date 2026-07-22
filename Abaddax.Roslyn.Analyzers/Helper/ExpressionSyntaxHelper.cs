@@ -1,9 +1,10 @@
+using Abaddax.Roslyn.Analyzers.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Diagnostics;
 
-namespace Abaddax.Roslyn.Analyzers.Extensions
+namespace Abaddax.Roslyn.Analyzers.Helper
 {
     internal static class ExpressionSyntaxHelper
     {
@@ -98,21 +99,21 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
             if (targetSymbol == null)
                 return expression;
 
-            var lastAssignment = AssignmentHelper.GetDefinitiveLastAssignment(
-                methodBody,
-                expression.IgnoreCasts().IgnoreNullSuppression(),
-                targetSymbol,
-                semanticModel,
-                cancellationToken);
-            if (lastAssignment.Type != AssignmentHelper.LastAssignment.MatchType.Found || lastAssignment.Assignment == null)
+            var operation = semanticModel.GetOperation(expression, cancellationToken);
+            if (operation == null)
                 return expression;
 
-            var lastAssignmentExpression = lastAssignment.Assignment.Syntax switch
+            var lastAssignment = MethodFlowAnalysis.TraverseAssignments(operation, semanticModel, cancellationToken);
+            if (lastAssignment == null || expression == lastAssignment.Syntax)
+                return expression;
+
+            var lastAssignmentExpression = lastAssignment.Syntax switch
             {
-                IdentifierNameSyntax identifier when identifier.Parent is ForEachStatementSyntax foreachLoop => foreachLoop.Expression,
-                AssignmentExpressionSyntax assignment => assignment.Right,
-                VariableDeclaratorSyntax varDecl => varDecl.Initializer?.Value,
-                _ => null
+                // Special case for foreach(var x in y) -> forward to y
+                IdentifierNameSyntax identifier
+                    when identifier.Parent is ForEachStatementSyntax foreachLoop
+                    => foreachLoop.Expression,
+                _ => lastAssignment.Syntax as ExpressionSyntax
             };
             if (lastAssignmentExpression == null)
                 return expression;

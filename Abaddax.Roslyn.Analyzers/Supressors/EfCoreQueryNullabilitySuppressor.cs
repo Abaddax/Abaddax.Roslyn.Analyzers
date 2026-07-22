@@ -1,9 +1,10 @@
 using Abaddax.Roslyn.Analyzers.Extensions;
+using Abaddax.Roslyn.Analyzers.Helper;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
-using static Abaddax.Roslyn.Analyzers.Extensions.ExpressionSyntaxHelper;
+using static Abaddax.Roslyn.Analyzers.Helper.ExpressionSyntaxHelper;
 
 namespace Abaddax.Roslyn.Analyzers.Supressors
 {

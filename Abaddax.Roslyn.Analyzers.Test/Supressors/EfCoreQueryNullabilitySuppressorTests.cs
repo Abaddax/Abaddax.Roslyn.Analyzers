@@ -35,14 +35,15 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
                     }
                     public static class EntityFrameworkQueryableExtensions
                     {
-                        public static IIncludableQueryable<TEntity, TProperty> Include<TEntity, TProperty>(
+                        #pragma warning disable CS0626
+                        public static extern IIncludableQueryable<TEntity, TProperty> Include<TEntity, TProperty>(
                             this IQueryable<TEntity> source,
                             Expression<Func<TEntity, TProperty>> navigationPropertyPath)
-                            where TEntity : class => throw new NotImplementedException();
-                        public static IIncludableQueryable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
+                            where TEntity : class;
+                        public static extern IIncludableQueryable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
                             this IIncludableQueryable<TEntity, TPreviousProperty> source,
                             Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath) 
-                            where TEntity : class => throw new NotImplementedException();
+                            where TEntity : class;
                     }
                     namespace Query
                     {
@@ -177,6 +178,41 @@ namespace Abaddax.Roslyn.Analyzers.Test.Supressors
                 DiagnosticResult.CompilerWarning("CS8602")
                     .WithLocation(1)
                     .WithIsSuppressed(false)
+                );
+        }
+        [Test]
+        public async Task ShouldSuppressIfNestedDbSet()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                { 
+                    public class Container
+                    {
+                        public TestContext DB { get; set; } = new();
+                    }
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var container = new Container();
+
+                            var q = container.DB.Persons
+                                .Include(x => x.Mother).ThenInclude(x => {|#0:x|}.Father)
+                                .Include(x => x.Mother).ThenInclude(x => {|#1:x|}.Mother);
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(true)
                 );
         }
 
