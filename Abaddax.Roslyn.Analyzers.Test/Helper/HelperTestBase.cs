@@ -10,31 +10,13 @@ namespace Abaddax.Roslyn.Analyzers.Test.Helper
         private static MetadataReference[] GetSystemMetadataReferences()
         {
             var trustedAssemblies = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string;
-            var trustedAssembliesPaths = trustedAssemblies?.Split(';') ?? [];
+            var trustedAssembliesPaths = trustedAssemblies?.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
 
             var references = trustedAssembliesPaths
                 .Select(path => MetadataReference.CreateFromFile(path))
                 .ToArray();
 
             return references;
-
-
-            var required = new List<string>()
-            {
-                "System.Runtime.dll",
-                "netstandard.dll",
-                "mscorlib.dll",
-                "System.Private.CoreLib.dll",
-            };
-            List<string> filteredPathList = trustedAssembliesPaths
-                .Where(p => required.Any(r => p.Contains(r)))
-                .ToList();
-            List<MetadataReference> ret = new List<MetadataReference>();
-            foreach (var path in filteredPathList)
-            {
-                ret.Add(MetadataReference.CreateFromFile(path));
-            }
-            return ret.ToArray();
         }
 
         public void Parse(string source,
