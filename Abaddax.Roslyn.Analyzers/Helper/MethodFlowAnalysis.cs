@@ -93,17 +93,20 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         {
             public SyntaxNode MethodSyntax { get; }
             public IMethodSymbol Method { get; }
+            public SemanticModel PreviousSemanticModel { get; }
             public IReadOnlyDictionary<IParameterSymbol, ParameterValue>? PreviousParameters { get; }
             public ControlFlowGraph? PreviousControlFlowGraph { get; }
 
             public TraversalStackInfo(
                 SyntaxNode methodSyntax,
                 IMethodSymbol method,
+                SemanticModel previousSemanticModel,
                 IReadOnlyDictionary<IParameterSymbol, ParameterValue>? previousParameters,
                 ControlFlowGraph? previousControlFlowGraph)
             {
                 MethodSyntax = methodSyntax ?? throw new ArgumentNullException(nameof(methodSyntax));
                 Method = method ?? throw new ArgumentNullException(nameof(method));
+                PreviousSemanticModel = previousSemanticModel ?? throw new ArgumentNullException(nameof(previousSemanticModel));
                 PreviousParameters = previousParameters;
                 PreviousControlFlowGraph = previousControlFlowGraph;
             }
@@ -129,7 +132,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (methodSyntax == null)
                 yield break;
             if (!semanticModel.HasSameSyntaxTree(methodSyntax))
-                yield break;
+                semanticModel = semanticModel.GetSemanticModelFor(methodSyntax);
 
             // 2. Add to callstack
             if (callStack.Count > maxCallStackDepth || !callStack.Add(targetMethod))
@@ -248,7 +251,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (methodSyntax == null)
                 yield break;
             if (!semanticModel.HasSameSyntaxTree(methodSyntax))
-                yield break;
+                semanticModel = semanticModel.GetSemanticModelFor(methodSyntax);
 
             // 2. Add to callstack
             if (callStack.Count > maxCallStackDepth || !callStack.Add(targetMethod))
@@ -375,7 +378,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (methodBody == null)
                 yield break;
             if (!semanticModel.HasSameSyntaxTree(methodBody))
-                yield break;
+                semanticModel = semanticModel.GetSemanticModelFor(methodBody);
 
             // 2. Get symbol to check for assignments
             var targetSymbol = semanticModel.GetSymbolInfo(expression, cancellationToken).Symbol;
@@ -514,6 +517,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     break;
 
                 callStack.Remove(previousCallStackInfo.Method);
+                semanticModel = previousCallStackInfo.PreviousSemanticModel;
                 outerArguments = previousCallStackInfo.PreviousParameters;
                 cfg = previousCallStackInfo.PreviousControlFlowGraph;
                 callStackInfo.Pop();
@@ -526,9 +530,6 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 var methodSyntax = GetMethodSyntaxNode(invocation, outerArguments, cancellationToken);
                 if (methodSyntax == null)
                     return operation;
-                if (!semanticModel.HasSameSyntaxTree(methodSyntax))
-                    return operation;
-
 
                 // 2. Check for possible return values
                 var lastAssignments = GetPossibleReturnValuesInternal(invocation, semanticModel, null, outerArguments, callStack, maxCallStackDepth, cancellationToken);
@@ -539,7 +540,10 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 // 3. Check if last assignment is inside the invocation method
                 if (methodSyntax.Contains(lastAssignment.Syntax))
                 {
-                    var currentCallStackInfo = new TraversalStackInfo(methodSyntax, invocation.TargetMethod, outerArguments, cfg);
+                    var currentCallStackInfo = new TraversalStackInfo(methodSyntax, invocation.TargetMethod, semanticModel, outerArguments, cfg);
+
+                    if (!semanticModel.HasSameSyntaxTree(methodSyntax))
+                        semanticModel = semanticModel.GetSemanticModelFor(methodSyntax);
 
                     // 4. Inherit variables from outer scope (crucial for local functions capturing variables)
                     // And map known argument constants to the method parameters
@@ -570,8 +574,6 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 var methodSyntax = GetMethodSyntaxNode(outInvocation, outerArguments, cancellationToken);
                 if (methodSyntax == null)
                     return operation;
-                if (!semanticModel.HasSameSyntaxTree(methodSyntax))
-                    return operation;
 
                 // 2. Check for possible out values
                 var lastAssignments = GetPossibleOutParameterValuesInternal(outInvocation, argument, semanticModel, cfg, outerArguments, callStack, maxCallStackDepth, cancellationToken);
@@ -582,7 +584,10 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 // 3. Check if last assignment is inside the invocation method
                 if (methodSyntax.Contains(lastAssignment.Syntax))
                 {
-                    var currentCallStackInfo = new TraversalStackInfo(methodSyntax, outInvocation.TargetMethod, outerArguments, cfg);
+                    var currentCallStackInfo = new TraversalStackInfo(methodSyntax, outInvocation.TargetMethod, semanticModel, outerArguments, cfg);
+
+                    if (!semanticModel.HasSameSyntaxTree(methodSyntax))
+                        semanticModel = semanticModel.GetSemanticModelFor(methodSyntax);
 
                     // 4. Inherit variables from outer scope (crucial for local functions capturing variables)
                     // And map known argument constants to the method parameters
@@ -626,10 +631,11 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         var methodSyntax = GetMethodSyntaxNode(parentInvocation, outerArguments, cancellationToken);
                         if (methodSyntax == null)
                             return operation;
-                        if (!semanticModel.HasSameSyntaxTree(methodSyntax))
-                            return operation;
 
-                        var currentCallStackInfo = new TraversalStackInfo(methodSyntax, parentInvocation.TargetMethod, outerArguments, cfg);
+                        var currentCallStackInfo = new TraversalStackInfo(methodSyntax, parentInvocation.TargetMethod, semanticModel, outerArguments, cfg);
+
+                        if (!semanticModel.HasSameSyntaxTree(methodSyntax))
+                            semanticModel = semanticModel.GetSemanticModelFor(methodSyntax);
 
                         // 2 Inherit variables from outer scope (crucial for local functions capturing variables)
                         // And map known argument constants to the method parameters
