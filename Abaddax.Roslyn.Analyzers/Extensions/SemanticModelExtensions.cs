@@ -8,5 +8,11 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
         {
             return semanticModel.SyntaxTree == syntaxNode.SyntaxTree;
         }
+        public static SemanticModel GetSemanticModelFor(this SemanticModel semanticModel, SyntaxNode syntaxNode)
+        {
+            if (semanticModel.HasSameSyntaxTree(syntaxNode))
+                return semanticModel;
+            return semanticModel.Compilation.GetSemanticModel(syntaxNode.SyntaxTree);
+        }
     }
 }

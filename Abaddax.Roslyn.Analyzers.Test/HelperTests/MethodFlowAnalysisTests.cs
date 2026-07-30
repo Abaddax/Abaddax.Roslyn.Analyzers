@@ -944,7 +944,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.TraverseAssignments))]
-        public void ShouldTraverseInsideLamdaAssignment()
+        public void ShouldTraverseAssignmentInsideLamda()
         {
             var operation = Process<IOperation>(
               """
@@ -980,7 +980,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.TraverseAssignments))]
-        public void ShouldTraverseInsideLocalFunctionAssignment()
+        public void ShouldTraverseAssignmentInsideLocalFunction()
         {
             var operation = Process<IOperation>(
               """
@@ -1009,7 +1009,34 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
             Assert.That(traversed, Is.Not.Null);
             Assert.That(traversed.Syntax.ToFullString(), Is.EqualTo("1"));
         }
+        [Test]
+        [Category(nameof(MethodFlowAnalysis.TraverseAssignments))]
+        public void ShouldTraverseAssignmentInsideLinqLamda()
+        {
+            var operation = Process<IOperation>(
+              """
+                using System;
+                using System.Linq;
 
+                public class Test
+                {
+                    public void Func()
+                    {
+                        var x = new int[10];
+                        var y = x.Where(x => [|x|] > 5);
+                    }
+                }
+                """,
+              out var semanticModel);
+
+            var traversed = MethodFlowAnalysis.TraverseAssignments(
+                operation,
+                semanticModel,
+                default);
+
+            Assert.That(traversed, Is.Not.Null);
+            Assert.That(traversed.Syntax.ToFullString(), Is.EqualTo("new int[10]"));
+        }
 
     }
 }
