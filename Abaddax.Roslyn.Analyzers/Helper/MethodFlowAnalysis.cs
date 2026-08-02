@@ -436,6 +436,29 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                             {
                                 if (x.Assignment != null)
                                     return x;
+
+                                // Special checks for properties/fields
+                                if (targetSymbol is IPropertySymbol or IFieldSymbol)
+                                {
+                                    // Block for instance method invocations, as they could protentially alter the property
+                                    if (x.Operation is IInstanceReferenceOperation { Parent: IInvocationOperation } instanceInvocation &&
+                                        (instanceInvocation.Type?.IsDerivedFrom(targetSymbol.ContainingType) ?? false))
+                                    {
+                                        // Block via empty assignment
+                                        return (x.Operation, (null, null));
+                                    }
+                                    // Block for calls that pass 'this' parameter, as they could protentially alter a public property
+                                    if (targetSymbol.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedAndInternal &&
+                                        x.Operation is IInvocationOperation thisPassedInvocation &&
+                                        thisPassedInvocation.Arguments
+                                            .Where(x => x.Value.Type?.IsDerivedFrom(targetSymbol.ContainingType) ?? false)
+                                            .Any(x => x.Value is IInstanceReferenceOperation))
+                                    {
+                                        // Block via empty assignment
+                                        return (x.Operation, (null, null));
+                                    }
+                                }
+
                                 // Also check for local functions, as they might also alter the target without explicit assignments
                                 if (x.Operation is IInvocationOperation invocation &&
                                     invocation.TargetMethod.MethodKind is MethodKind.LocalFunction or MethodKind.LambdaMethod or MethodKind.DelegateInvoke)
@@ -978,7 +1001,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (targetParam.ContainingSymbol is not IMethodSymbol methodSymbol)
                 yield break;
 
-            // 1. Get the index of our parameter (e.g., 'a' is index 0)
+            // 1. Get the index of our parameter (e.g. '(a,b)=>...', 'a' is index 0)
             int paramIndex = methodSymbol.Parameters.IndexOf(targetParam);
             if (paramIndex == -1)
                 yield break;

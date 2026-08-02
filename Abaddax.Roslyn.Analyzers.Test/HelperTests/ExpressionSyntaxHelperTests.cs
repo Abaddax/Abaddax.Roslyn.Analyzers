@@ -55,7 +55,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
                 """);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ToFullString().Trim(), Is.EqualTo("1"));
+            Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
 
         //TODO:  ShouldTraverseAssignmentIfLoop -> How should it behave correclty?
@@ -84,7 +84,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
                 """);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ToFullString().Trim(), Is.EqualTo("new int[10]"));
+            Assert.That(result.ToFullString(), Is.EqualTo("new int[10]").IgnoreWhiteSpace);
         }
 
         [Test]
@@ -108,7 +108,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
                 """);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ToFullString().Trim(), Is.EqualTo("1"));
+            Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
         public void ShouldTraverseAssignmentProperty()
@@ -131,7 +131,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
                 """);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ToFullString().Trim(), Is.EqualTo("1"));
+            Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
         public void ShouldTraverseAssignmentPropertyCtor()
@@ -156,7 +156,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
                 """);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ToFullString().Trim(), Is.EqualTo("1"));
+            Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
 
 
@@ -183,7 +183,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
                 """);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ToFullString().Trim(), Is.EqualTo("1"));
+            Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
         public void ShouldExpandTask()
@@ -210,7 +210,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
                 """);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ToFullString().Trim(), Is.EqualTo("await Task.FromResult(1)"));
+            Assert.That(result.ToFullString(), Is.EqualTo("await Task.FromResult(1)").IgnoreWhiteSpace);
         }
         [Test]
         public void ShouldExpandLocalFunctionAssignments()
@@ -241,7 +241,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
                 """);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ToFullString().Trim(), Is.EqualTo("1"));
+            Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
         public void ShouldExpandLamdaLocalFunctionAssignments()
@@ -263,7 +263,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
                 """);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ToFullString().Trim(), Is.EqualTo("1"));
+            Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
         public void ShouldExpandLocalFunctionOutAssignments()
@@ -297,7 +297,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
                 """);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ToFullString().Trim(), Is.EqualTo("2"));
+            Assert.That(result.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
         }
         [Test]
         public void ShouldExpandForwardingLocalFunctionAssignments()
@@ -324,7 +324,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
                 """);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ToFullString().Trim(), Is.EqualTo("1"));
+            Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
         public void ShouldExpandForwardingLamdaFunctionAssignments()
@@ -352,7 +352,31 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
                 """);
 
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ToFullString().Trim(), Is.EqualTo("1"));
+            Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+        }
+        [Test]
+        public void ShouldNotExpandOutsideCurrentFunction()
+        {
+            var result = ProcessOrigin(
+                """
+                using System;
+
+                public class Test
+                {
+                    public void Main()
+                    {
+                        Func(1);
+                    }
+
+                    public void Func(int x)
+                    {
+                        [|x|].ToString();
+                    }
+                }
+                """);
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.ToFullString(), Is.EqualTo("x").IgnoreWhiteSpace);
         }
 
     }

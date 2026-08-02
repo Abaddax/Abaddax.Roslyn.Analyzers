@@ -37,5 +37,14 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                 return null;
             return named.TypeArguments.ElementAtOrDefault(index);
         }
+
+        public static bool IsDerivedFrom(this ITypeSymbol symbol, ITypeSymbol baseClass)
+        {
+            if (SymbolEqualityComparer.Default.Equals(symbol, baseClass))
+                return true;
+            if (symbol.BaseType == null)
+                return false;
+            return symbol.BaseType.IsDerivedFrom(baseClass);
+        }
     }
 }
