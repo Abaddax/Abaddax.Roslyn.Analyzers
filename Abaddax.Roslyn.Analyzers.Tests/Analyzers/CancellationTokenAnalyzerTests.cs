@@ -1,10 +1,10 @@
 ﻿using Abaddax.Roslyn.Analyzers.Analyzers;
-using Abaddax.Roslyn.Analyzers.Test.Helper;
+using Abaddax.Roslyn.Analyzers.Tests.Helper;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using NUnit.Framework;
 
-namespace Abaddax.Roslyn.Analyzers.Test.Analyzers
+namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
 {
     public sealed class CancellationTokenAnalyzerTests
         : AnalyzerTestBase<CancellationTokenAnalyzer>

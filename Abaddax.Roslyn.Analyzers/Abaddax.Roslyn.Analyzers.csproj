@@ -40,7 +40,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Abaddax.Roslyn.Analyzers.CodeFixes" />
-    <InternalsVisibleTo Include="Abaddax.Roslyn.Analyzers.Test" />
+    <InternalsVisibleTo Include="Abaddax.Roslyn.Analyzers.Tests" />
   </ItemGroup>
 
 </Project>
