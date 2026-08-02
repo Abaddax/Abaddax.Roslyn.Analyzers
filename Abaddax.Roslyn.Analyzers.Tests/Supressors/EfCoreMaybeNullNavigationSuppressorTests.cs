@@ -1,9 +1,9 @@
 ﻿using Abaddax.Roslyn.Analyzers.Supressors;
-using Abaddax.Roslyn.Analyzers.Test.Helper;
+using Abaddax.Roslyn.Analyzers.Tests.Helper;
 using Microsoft.CodeAnalysis.Testing;
 using NUnit.Framework;
 
-namespace Abaddax.Roslyn.Analyzers.Test.Supressors
+namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
 {
     public sealed class EfCoreMaybeNullNavigationSuppressorTests
         : SuppressorTestBase<EfCoreMaybeNullNavigationSuppressor>

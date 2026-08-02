@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 
-namespace Abaddax.Roslyn.Analyzers.Test.Helper
+namespace Abaddax.Roslyn.Analyzers.Tests.Helper
 {
     public abstract class AnalyzerTestBase<TAnalyzer>
         where TAnalyzer : DiagnosticAnalyzer, new()

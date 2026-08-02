@@ -4,7 +4,7 @@
   </Folder>
   <Project Path="Abaddax.Roslyn.Analyzers.CodeFixes/Abaddax.Roslyn.Analyzers.CodeFixes.csproj" />
   <Project Path="Abaddax.Roslyn.Analyzers.Package/Abaddax.Roslyn.Analyzers.Package.csproj" />
-  <Project Path="Abaddax.Roslyn.Analyzers.Test/Abaddax.Roslyn.Analyzers.Test.csproj" />
+  <Project Path="Abaddax.Roslyn.Analyzers.Tests/Abaddax.Roslyn.Analyzers.Tests.csproj" />
   <Project Path="Abaddax.Roslyn.Analyzers.Vsix/Abaddax.Roslyn.Analyzers.Vsix.csproj" />
   <Project Path="Abaddax.Roslyn.Analyzers/Abaddax.Roslyn.Analyzers.csproj" />
 </Solution>

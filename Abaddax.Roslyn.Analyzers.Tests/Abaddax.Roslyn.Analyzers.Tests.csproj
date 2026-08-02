@@ -11,12 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Verifiers\**" />
-    <EmbeddedResource Remove="Verifiers\**" />
-    <None Remove="Verifiers\**" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="Abaddax.Build.Common" Version="0.0.1-preview6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="coverlet.collector" Version="10.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -37,10 +35,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.CodeFixes\Abaddax.Roslyn.Analyzers.CodeFixes.csproj" />
     <ProjectReference Include="..\Abaddax.Roslyn.Analyzers\Abaddax.Roslyn.Analyzers.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="10.0.300" />
   </ItemGroup>
 
 </Project>

@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
 using NUnit.Framework;
 
-namespace Abaddax.Roslyn.Analyzers.Test.Helper
+namespace Abaddax.Roslyn.Analyzers.Tests.Helper
 {
     public abstract class HelperTestBase
     {
