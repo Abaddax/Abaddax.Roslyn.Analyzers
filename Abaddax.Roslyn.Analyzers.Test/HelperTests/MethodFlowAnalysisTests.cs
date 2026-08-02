@@ -904,7 +904,7 @@ namespace Abaddax.Roslyn.Analyzers.Test.HelperTests
 
             Assert.That(possibleLastAssignments, Has.Length.EqualTo(1));
             Assert.That(possibleLastAssignments[0].Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
-        }   
+        }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]
         public void ShouldNotFindLastIfInstanceMethodCall()
