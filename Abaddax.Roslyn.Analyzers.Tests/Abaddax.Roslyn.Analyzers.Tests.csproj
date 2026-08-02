@@ -8,6 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <NoWarn>$(NoWarn);VSTHRD111</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

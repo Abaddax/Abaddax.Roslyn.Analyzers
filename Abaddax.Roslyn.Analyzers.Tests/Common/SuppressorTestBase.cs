@@ -1,9 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
+using System.Diagnostics.CodeAnalysis;
 
-namespace Abaddax.Roslyn.Analyzers.Tests.Helper
+namespace Abaddax.Roslyn.Analyzers.Tests.Common
 {
     public abstract partial class SuppressorTestBase<TSuppressor>
         where TSuppressor : DiagnosticSuppressor, new()
@@ -12,18 +13,23 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helper
         {
             return;
         }
-        protected Task VerifySuppressorAsync(string source, params DiagnosticResult[] expected)
+        protected Task VerifySuppressorAsync([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
+            params DiagnosticResult[] expected)
         {
             return VerifySuppressorAsync(source, (_) => { }, expected);
         }
-        protected Task VerifySuppressorAsync(string source, OutputKind? outputKind, params DiagnosticResult[] expected)
+        protected Task VerifySuppressorAsync([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
+            OutputKind? outputKind,
+            params DiagnosticResult[] expected)
         {
             return VerifySuppressorAsync(source, state =>
             {
                 state.OutputKind = outputKind;
             }, expected);
         }
-        protected async Task VerifySuppressorAsync(string source, Action<SolutionState> configureTestState, params DiagnosticResult[] expected)
+        protected async Task VerifySuppressorAsync([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
+            Action<SolutionState> configureTestState,
+            params DiagnosticResult[] expected)
         {
             if (expected.Any(x => x.IsSuppressed == null))
                 throw new Exception("'DiagnosticResult.IsSuppressed' must be set. Use '.WithIsSuppressed(suppressed)'");

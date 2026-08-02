@@ -1,9 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
+using System.Diagnostics.CodeAnalysis;
 
-namespace Abaddax.Roslyn.Analyzers.Tests.Helper
+namespace Abaddax.Roslyn.Analyzers.Tests.Common
 {
     public abstract class AnalyzerTestBase<TAnalyzer>
         where TAnalyzer : DiagnosticAnalyzer, new()
@@ -13,18 +14,23 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helper
             return;
         }
 
-        protected Task VerifyAnalyzerAsync(string source, params DiagnosticResult[] expected)
+        protected Task VerifyAnalyzerAsync([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
+            params DiagnosticResult[] expected)
         {
             return VerifyAnalyzerAsync(source, (_) => { }, expected);
         }
-        protected Task VerifyAnalyzerAsync(string source, OutputKind? outputKind, params DiagnosticResult[] expected)
+        protected Task VerifyAnalyzerAsync([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
+            OutputKind? outputKind,
+            params DiagnosticResult[] expected)
         {
             return VerifyAnalyzerAsync(source, state =>
             {
                 state.OutputKind = outputKind;
             }, expected);
         }
-        protected Task VerifyAnalyzerAsync(string source, Action<SolutionState> configureTestState, params DiagnosticResult[] expected)
+        protected Task VerifyAnalyzerAsync([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
+            Action<SolutionState> configureTestState,
+            params DiagnosticResult[] expected)
         {
             var test = new CSharpAnalyzerTest<TAnalyzer, DefaultVerifier>()
             {

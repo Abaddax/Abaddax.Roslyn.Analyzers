@@ -1,5 +1,5 @@
-﻿using Abaddax.Roslyn.Analyzers.Analyzers;
-using Abaddax.Roslyn.Analyzers.Tests.Helper;
+using Abaddax.Roslyn.Analyzers.Analyzers;
+using Abaddax.Roslyn.Analyzers.Tests.Common;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using NUnit.Framework;

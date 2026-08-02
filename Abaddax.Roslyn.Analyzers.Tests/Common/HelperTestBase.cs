@@ -1,9 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
 using NUnit.Framework;
+using System.Diagnostics.CodeAnalysis;
 
-namespace Abaddax.Roslyn.Analyzers.Tests.Helper
+namespace Abaddax.Roslyn.Analyzers.Tests.Common
 {
     public abstract class HelperTestBase
     {
@@ -19,7 +20,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helper
             return references;
         }
 
-        public void Parse(string source,
+        public void Parse([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
             out SemanticModel semanticModel,
             out SyntaxNode syntaxNode,
             int index = 0)

@@ -1,11 +1,11 @@
-﻿using Abaddax.Roslyn.Analyzers.Tests.Helper;
+using Abaddax.Roslyn.Analyzers.Tests.Common;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using NUnit.Framework;
 using MethodFlowAnalysis = Abaddax.Roslyn.Analyzers.Helper.MethodFlowAnalysis;
 
-namespace Abaddax.Roslyn.Analyzers.Tests.HelperTests
+namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
 {
     public sealed class MethodFlowAnalysisTests : HelperTestBase
     {
