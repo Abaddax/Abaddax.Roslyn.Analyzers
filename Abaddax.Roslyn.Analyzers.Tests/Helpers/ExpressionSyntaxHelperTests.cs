@@ -1,9 +1,9 @@
-﻿using Abaddax.Roslyn.Analyzers.Tests.Helper;
+using Abaddax.Roslyn.Analyzers.Tests.Common;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NUnit.Framework;
 using ExpressionSyntaxHelper = Abaddax.Roslyn.Analyzers.Helper.ExpressionSyntaxHelper;
 
-namespace Abaddax.Roslyn.Analyzers.Tests.HelperTests
+namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
 {
     public sealed class ExpressionSyntaxHelperTests : HelperTestBase
     {
