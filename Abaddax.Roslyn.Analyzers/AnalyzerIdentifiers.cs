@@ -8,6 +8,7 @@ namespace Abaddax.Roslyn.Analyzers
         public const string PreferAsyncSuffixAnalyzer = "ABX0002";
         public const string PreferAsyncOverloadAnalyzer = "ABX0003";
         public const string EfCorePreferAsyncCallAnalyzer = "ABX0004";
+        public const string EfCoreExplicitTrackingAnalyzer = "ABX0005";
 
         #endregion
 
