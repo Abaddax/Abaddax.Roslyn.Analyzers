@@ -1002,7 +1002,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 yield break;
 
             // 1. Get the index of our parameter (e.g. '(a,b)=>...', 'a' is index 0)
-            int paramIndex = methodSymbol.Parameters.IndexOf(targetParam);
+            int paramIndex = methodSymbol.Parameters.IndexOf(targetParam, 0, methodSymbol.Parameters.Length, SymbolEqualityComparer.Default);
             if (paramIndex == -1)
                 yield break;
 
@@ -1048,13 +1048,21 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 case IAnonymousFunctionOperation anonymousFunction:
                 {
                     var usage = anonymousFunction.Parent?.IgnoreCasts();
+
                     // 1. Unwrap implicit delegate creation
                     if (usage is IDelegateCreationOperation delegateCreation)
-                    {
                         usage = delegateCreation.Parent;
-                    }
+
                     if (usage is not IArgumentOperation argument || argument.Parent is not IInvocationOperation parentInvocation)
                         yield break;
+
+                    // Shortcut for known LINQ methods
+                    var linqParameter = LinqTraversalHelper.GetForwardedParameter(parentInvocation, argument, paramIndex);
+                    if (linqParameter != null)
+                    {
+                        yield return (linqParameter, null);
+                        yield break;
+                    }
 
                     // 2. Get the delegate parameter 
                     var delegateParam = argument.Parameter; // This is `selector`

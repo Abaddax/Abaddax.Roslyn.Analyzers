@@ -1110,7 +1110,6 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.TraverseAssignments))]
-        [Ignore("Linq currently not supported")]
         public void ShouldTraverseAssignmentInsideLinqLamda()
         {
             var operation = Process<IOperation>(
