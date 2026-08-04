@@ -215,6 +215,65 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                     .WithIsSuppressed(true)
                 );
         }
+        [Test]
+        public async Task ShouldSuppressIfLinqInsideQuery()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var db = new TestContext();
+
+                            var q = db.Persons
+                                .Where(x => x.Childs.Any(x => {|#0:x.Mother|}.Father == null));
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true)
+                );
+        }
+        [Test]
+        public async Task ShouldNotSuppressIfExternalLinqInsideQuery()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var db = new TestContext();
+
+                            var local = new TestContext.TestEntity();
+
+                            var q = db.Persons
+                                .Where(x => x.Childs.Any(x => {|#0:local.Mother|}.Father == {|#1:x.Mother|}.Father));
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(false),
+                 DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(true)
+                );
+        }
 
     }
 }
