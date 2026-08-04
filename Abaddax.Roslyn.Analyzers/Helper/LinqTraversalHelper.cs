@@ -25,9 +25,23 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             // Get generic method definition
             linqMethod = linqMethod.OriginalDefinition;
 
-            if (!linqMethod.ContainingType.HasName("Enumerable", "System.Linq"))
-                return null;
+            if (linqMethod.ContainingType.HasName("Enumerable", "System.Linq"))
+            {
+                return GetEnumerableForwardedParameter(
+                    linqMethod,
+                    linqMethodInvocation,
+                    linqParameterIndex,
+                    lambdaParameterIndex);
+            }
+            return null;
+        }
 
+        private static IOperation? GetEnumerableForwardedParameter(
+            IMethodSymbol linqMethod,
+            IInvocationOperation linqMethodInvocation,
+            int linqParameterIndex,
+            int lambdaParameterIndex)
+        {
 #pragma warning disable IDE1006 // Namingstyle
             const string IEnumerable = "System.Collections.Generic.IEnumerable";
             const string IOrderedEnumerable = "System.Linq.IOrderedEnumerable";
@@ -90,6 +104,10 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                             IsFunctionMatch(linqMethod, $"Average<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Int64}>)") ||
                             IsFunctionMatch(linqMethod, $"Average<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Nullable}<{Int64}>>)")
                             => linqMethodInvocation.Arguments[0].Value,
+                        Single when
+                           IsFunctionMatch(linqMethod, $"Average<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Single}>)") ||
+                           IsFunctionMatch(linqMethod, $"Average<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Nullable}<{Single}>>)")
+                           => linqMethodInvocation.Arguments[0].Value,
                         Double when
                             IsFunctionMatch(linqMethod, $"Average<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Double}>)") ||
                             IsFunctionMatch(linqMethod, $"Average<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Nullable}<{Double}>>)")
@@ -244,6 +262,10 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                             IsFunctionMatch(linqMethod, $"Max<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Int64}>)") ||
                             IsFunctionMatch(linqMethod, $"Max<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Nullable}<{Int64}>>)")
                             => linqMethodInvocation.Arguments[0].Value,
+                        Single when
+                            IsFunctionMatch(linqMethod, $"Max<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Single}>)") ||
+                            IsFunctionMatch(linqMethod, $"Max<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Nullable}<{Single}>>)")
+                            => linqMethodInvocation.Arguments[0].Value,
                         Double when
                             IsFunctionMatch(linqMethod, $"Max<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Double}>)") ||
                             IsFunctionMatch(linqMethod, $"Max<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Nullable}<{Double}>>)")
@@ -278,6 +300,10 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         Int64 when
                             IsFunctionMatch(linqMethod, $"Min<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Int64}>)") ||
                             IsFunctionMatch(linqMethod, $"Min<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Nullable}<{Int64}>>)")
+                            => linqMethodInvocation.Arguments[0].Value,
+                        Single when
+                            IsFunctionMatch(linqMethod, $"Min<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Single}>)") ||
+                            IsFunctionMatch(linqMethod, $"Min<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Nullable}<{Single}>>)")
                             => linqMethodInvocation.Arguments[0].Value,
                         Double when
                             IsFunctionMatch(linqMethod, $"Min<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Double}>)") ||
@@ -382,6 +408,10 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                             IsFunctionMatch(linqMethod, $"Sum<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Int64}>)") ||
                             IsFunctionMatch(linqMethod, $"Sum<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Nullable}<{Int64}>>)")
                             => linqMethodInvocation.Arguments[0].Value,
+                        Single when
+                            IsFunctionMatch(linqMethod, $"Sum<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Single}>)") ||
+                            IsFunctionMatch(linqMethod, $"Sum<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Nullable}<{Single}>>)")
+                            => linqMethodInvocation.Arguments[0].Value,
                         Double when
                             IsFunctionMatch(linqMethod, $"Sum<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Double}>)") ||
                             IsFunctionMatch(linqMethod, $"Sum<TSource>({IEnumerable}<TSource>, {Func}<TSource,{Nullable}<{Double}>>)")
@@ -466,7 +496,6 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             return operation;
         }
 
-
         private static readonly Regex _MethodSignatureRegex = new Regex(
             @"^\s*(?<name>[A-Za-z_]\w*)(?:<(?<generics>.+?)>)?\((?<parameters>.*)\)\s*;?\s*$",
             RegexOptions.Compiled);
@@ -474,6 +503,9 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             @"^(?<namespace>(?:[A-Za-z_]\w*\.)*)(?<typename>[A-Za-z_]\w*)(?:<(?<generics>.+?)>)?$",
             RegexOptions.Compiled);
 
+        /// <summary>
+        /// Checks if <paramref name="method"/> matches <paramref name="methodSignature"/>
+        /// </summary>
         private static bool IsFunctionMatch(IMethodSymbol method,
            string methodSignature)
         {
@@ -512,6 +544,9 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             // All checks succeeded
             return true;
         }
+        /// <summary>
+        /// Checks is <paramref name="type"/> matches <paramref name="typeSignature"/>
+        /// </summary>
         private static bool IsParameterTypeMatch(ITypeSymbol type, string typeSignature)
         {
             var match = _TypeSignatureRegex.Match(typeSignature);
@@ -576,6 +611,5 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             }
             yield return text.Substring(start).Trim();
         }
-
     }
 }
