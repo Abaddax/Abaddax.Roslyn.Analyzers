@@ -85,6 +85,38 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 );
         }
         [Test]
+        public async Task ShouldSuggestAsyncOverloadIfStaticCall()
+        {
+            var source =
+                """
+                using System.Threading.Tasks;
+
+                namespace TestNamespace
+                {
+                    public static class Test
+                    {
+                        public static Task<int> Main()
+                        {
+                            var x = {|#0:Func()|};
+                            return Task.FromResult(x);
+                        }
+                        public static int Func()
+                        {
+                            return 1;
+                        }
+                        public static Task<int> FuncAsync()
+                        {
+                            return Task.FromResult(1);
+                        }
+                    }
+                }
+                """;
+            await VerifyAnalyzerAsync(source,
+                new DiagnosticResult(AnalyzerIdentifiers.PreferAsyncOverloadAnalyzer, DiagnosticSeverity.Info)
+                    .WithLocation(0)
+                );
+        }
+        [Test]
         public async Task ShouldSuggestAsyncOverloadIfExtensionCall()
         {
             var source =
@@ -338,6 +370,32 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                         public Task<int> FuncAsync(string x)
                         {
                             return Task.FromResult(1);
+                        }
+                    }
+                }
+                """;
+            await VerifyAnalyzerAsync(source);
+        }
+        [Test]
+        public async Task ShouldNotSuggestAsyncOverloadIfSuggestionIsCurrentMethod()
+        {
+            var source =
+                """
+                using System;
+                using System.Threading.Tasks;
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public int Func(string x)
+                        {
+                            return 1;
+                        }
+                        public Task<int> FuncAsync(string x)
+                        {
+                            var result = Func(x);
+                            return Task.FromResult(result);
                         }
                     }
                 }
