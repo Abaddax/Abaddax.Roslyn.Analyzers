@@ -16,8 +16,12 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
             return false;
         }
 
-        public static bool IsAsyncCompatibleReturnType(this ITypeSymbol type)
+        /// <summary>
+        /// Checks if the <paramref name="method"/> return a <see cref="Task"/>, <see cref="ValueTask"/> or <see cref="IAsyncEnumerable"/>
+        /// </summary>
+        public static bool IsAsyncCompatibleReturnType(this IMethodSymbol method)
         {
+            var type = method.ReturnType;
             if (type.HasName("Task", "System.Threading.Tasks"))
                 return true;
             if (type.HasName("ValueTask", "System.Threading.Tasks"))
@@ -26,11 +30,15 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                 return true;
             return false;
         }
+
+        /// <summary>
+        /// Checks if the declaration <paramref name="method"/> is async compatible via return type
+        /// </summary>
+        /// <remarks>Unlike <see cref="IsAsyncMethod(IMethodSymbol)"/> this method skips overriden methods, as the signature is given by the base class</remarks>
         public static bool IsTaskedMethodDeclaration(this IMethodSymbol method)
         {
             // Check return type: Task or ValueTask
-            var returnType = method.ReturnType;
-            if (!returnType.IsAsyncCompatibleReturnType())
+            if (!method.IsAsyncCompatibleReturnType())
             {
                 return false;
             }
@@ -44,14 +52,16 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
 
             return true;
         }
+        /// <summary>
+        /// Checks if the <paramref name="method"/> is async compatible via the return type
+        /// </summary>
         public static bool IsAsyncMethod(this IMethodSymbol method)
         {
             if (method.IsAsync)
                 return true;
 
             // Check return type: Task or ValueTask
-            var returnType = method.ReturnType;
-            if (!returnType.IsAsyncCompatibleReturnType())
+            if (!method.IsAsyncCompatibleReturnType())
             {
                 return false;
             }
@@ -82,7 +92,7 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                    (attr.AttributeClass?.HasName("FactAttribute", "Xunit") ?? false));
         }
 
-        public static IEnumerable<IMethodSymbol> ListPotentialAlternatives(ITypeSymbol receiverType, string targetName, SemanticModel model, int position)
+        public static IEnumerable<IMethodSymbol> ListPotentialAlternatives(ITypeSymbol receiverType, string targetName, SemanticModel semanticModel, int position)
         {
             //Check type and bases
             var current = receiverType;
@@ -109,16 +119,16 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
             }
 
             //Check extensions
-            var extensionMethods = MethodExtensions.ListExtensionMethodsFor(receiverType, model, position);
+            var extensionMethods = MethodExtensions.ListExtensionMethodsFor(receiverType, semanticModel, position);
             foreach (var candidate in extensionMethods
                 .Where(x => x.Name == targetName))
             {
                 yield return candidate;
             }
         }
-        public static IMethodSymbol[] ListExtensionMethodsFor(ITypeSymbol type, SemanticModel model, int position)
+        public static IMethodSymbol[] ListExtensionMethodsFor(ITypeSymbol type, SemanticModel semanticModel, int position)
         {
-            return model.LookupSymbols(position)
+            return semanticModel.LookupSymbols(position)
               .Where(x => x.IsStatic)
               .OfType<INamedTypeSymbol>()
               .SelectMany(x => x.GetMembers())

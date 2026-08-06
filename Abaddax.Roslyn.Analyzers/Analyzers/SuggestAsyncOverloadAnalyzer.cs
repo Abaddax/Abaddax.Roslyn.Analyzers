@@ -36,10 +36,10 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             var methodBlock = invocation.GetContainingMethodDeclarationBlock();
             if (methodBlock == null)
                 return;
-            if (context.SemanticModel.GetDeclaredSymbol(methodBlock) is not IMethodSymbol callerSymbol)
+            if (context.SemanticModel.GetDeclaredSymbol(methodBlock) is not IMethodSymbol callerMethod)
                 return;
             // Skip inside sync methods
-            if (!callerSymbol.IsTaskedMethodDeclaration())
+            if (!callerMethod.IsTaskedMethodDeclaration())
                 return;
 
             var symbol = context.SemanticModel.GetSymbolInfo(invocation).Symbol;
@@ -52,10 +52,10 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             if (method.IsAsyncMethod())
                 return;
 
-            if (context.SemanticModel.GetSymbolInfo(invocation).Symbol is not IMethodSymbol methodType)
-                return;
-
             var receiverType = method.ReceiverType;
+            // For member access (e.g. x.Func()), use the actual type of 'x' instead of ReceiverType.
+            // ReceiverType may resolve to a base type or extension method target,
+            // which may cause missing alternatives. So we use the actual type of the given variable instead
             if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)
             {
                 var typeInfo = context.SemanticModel.GetTypeInfo(memberAccess.Expression);
@@ -65,50 +65,51 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 return;
 
             //Check type
-            if (!HasAsyncAlternative(methodType, receiverType, context.SemanticModel, invocation.Expression.SpanStart, context.Compilation))
+            if (!HasAsyncAlternative(callerMethod, method, receiverType, context.SemanticModel, invocation.Expression.SpanStart))
                 return;
 
             var diagnostic = Diagnostic.Create(_Rule, invocation.GetLocation(), method.Name);
             context.ReportDiagnostic(diagnostic);
         }
 
-        private static bool HasAsyncAlternative(IMethodSymbol method, ITypeSymbol receiverType, SemanticModel model, int position, Compilation compilation)
+        private static bool HasAsyncAlternative(IMethodSymbol callerMethod, IMethodSymbol method, ITypeSymbol receiverType, SemanticModel semanticModel, int position)
         {
-            var candidates = PotentialAsyncAlternatives(method, receiverType, model, position)
-                .Where(candidates => candidates.ReturnType.IsAsyncCompatibleReturnType())
-                .Where(candidate => HasSupersetOfParameterTypes(candidate, method, model, position, compilation));
-            if (candidates.Any())
+            var candidates = PotentialAsyncAlternatives(method, receiverType, semanticModel, position)
+                .Where(candidate => candidate.IsAsyncCompatibleReturnType())
+                .Where(candidate => HasSupersetOfParameterTypes(candidate, method, semanticModel, position));
+            // Do not suggest original method! Otherwise this could unintentianally cause a stack overflow 
+            if (candidates.Any(x => !SymbolEqualityComparer.Default.Equals(x, callerMethod)))
                 return true;
             return false;
         }
 
-        private static IEnumerable<IMethodSymbol> PotentialAsyncAlternatives(IMethodSymbol method, ITypeSymbol receiverType, SemanticModel model, int position)
+        private static IEnumerable<IMethodSymbol> PotentialAsyncAlternatives(IMethodSymbol method, ITypeSymbol receiverType, SemanticModel semanticModel, int position)
         {
             var name = method.Name;
             var targetName = name + "Async";
-            return MethodExtensions.ListPotentialAlternatives(receiverType, targetName, model, position);
+            return MethodExtensions.ListPotentialAlternatives(receiverType, targetName, semanticModel, position);
         }
-        private static bool HasSupersetOfParameterTypes(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod, SemanticModel model, int position, Compilation compilation)
+        private static bool HasSupersetOfParameterTypes(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod, SemanticModel semanticModel, int position)
         {
             if (baselineMethod.Parameters.Length > candidateMethod.Parameters.Length)
                 return false;
             return baselineMethod.Parameters
                 .All(baselineParameter
                     => candidateMethod.Parameters.Any(candidateParameter
-                        => IsAsyncParameterAlternative(candidateParameter, baselineParameter, model, position, compilation)));
+                        => IsAsyncParameterAlternative(candidateParameter, baselineParameter, semanticModel, position)));
         }
-        private static bool IsAsyncParameterAlternative(IParameterSymbol canditateParameter, IParameterSymbol baselineParameter, SemanticModel model, int position, Compilation compilation)
+        private static bool IsAsyncParameterAlternative(IParameterSymbol canditateParameter, IParameterSymbol baselineParameter, SemanticModel semanticModel, int position)
         {
-            return IsAsyncParameterAlternative(canditateParameter.Type, baselineParameter.Type, model, position, compilation);
+            return IsAsyncTypeAlternative(canditateParameter.Type, baselineParameter.Type, semanticModel, position);
         }
-        private static bool IsAsyncParameterAlternative(ITypeSymbol canditateType, ITypeSymbol baselineType, SemanticModel model, int position, Compilation compilation)
+        private static bool IsAsyncTypeAlternative(ITypeSymbol canditateType, ITypeSymbol baselineType, SemanticModel semanticModel, int position)
         {
             // Exact match
             if (SymbolEqualityComparer.Default.Equals(canditateType, baselineType))
                 return true;
             // Convertable match
-            if (compilation.ClassifyConversion(baselineType, canditateType).Exists ||
-                compilation.ClassifyConversion(canditateType, baselineType).Exists)
+            if (semanticModel.Compilation.ClassifyConversion(baselineType, canditateType).Exists ||
+                semanticModel.Compilation.ClassifyConversion(canditateType, baselineType).Exists)
             {
                 return true;
             }
@@ -118,7 +119,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 return true;
             }
             // Has conversion via ToX()/AsX()
-            if (HasConversionMethod(canditateType, baselineType, model, position, compilation))
+            if (HasConversionMethod(canditateType, baselineType, semanticModel, position))
             {
                 return true;
             }
@@ -129,7 +130,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             }
             return false;
         }
-        private static bool HasConversionMethod(ITypeSymbol canditateType, ITypeSymbol baselineType, SemanticModel model, int position, Compilation compilation)
+        private static bool HasConversionMethod(ITypeSymbol canditateType, ITypeSymbol baselineType, SemanticModel semanticModel, int position)
         {
             var canditateTypeName = canditateType.Name;
             if (canditateType is IArrayTypeSymbol)
@@ -143,8 +144,8 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
 
             foreach (var targetName in targetNames)
             {
-                if (MethodExtensions.ListPotentialAlternatives(baselineType, targetName, model, position)
-                    .Any(x => IsAsyncParameterAlternative(x.ReturnType, canditateType, model, position, compilation)))
+                if (MethodExtensions.ListPotentialAlternatives(baselineType, targetName, semanticModel, position)
+                    .Any(x => IsAsyncTypeAlternative(x.ReturnType, canditateType, semanticModel, position)))
                 {
                     return true;
                 }
