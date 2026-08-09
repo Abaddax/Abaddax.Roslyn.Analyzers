@@ -39,7 +39,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
 
             var options = context.Options.GetGlobalOptions(location.SourceTree);
 
-            var method = context.SemanticModel.GetDeclaredSymbol(methodDecl);
+            var method = context.SemanticModel.GetDeclaredSymbol(methodDecl, context.CancellationToken);
             if (method == null)
                 return;
 
@@ -47,7 +47,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             if (!method.IsTaskedMethodDeclaration())
                 return;
             // Skip methods that already end with Async
-            if (method.Name.EndsWith("Async"))
+            if (method.Name.EndsWith("Async", StringComparison.Ordinal))
                 return;
 
             // Edge cases to ignore

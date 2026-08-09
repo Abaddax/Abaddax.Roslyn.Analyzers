@@ -62,27 +62,27 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             var methodBlock = invocation.GetContainingMethodDeclarationBlock();
             if (methodBlock == null)
                 return;
-            if (context.SemanticModel.GetDeclaredSymbol(methodBlock) is not IMethodSymbol callerSymbol)
+            if (context.SemanticModel.GetDeclaredSymbol(methodBlock, context.CancellationToken) is not IMethodSymbol callerSymbol)
                 return;
             // Skip inside sync methods
             if (!callerSymbol.IsTaskedMethodDeclaration())
                 return;
 
-            var symbol = context.SemanticModel.GetSymbolInfo(invocation).Symbol;
+            var symbol = context.SemanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol;
             if (symbol is not IMethodSymbol method)
                 return;
 
             // Skip methods that already end with Async
-            if (method.Name.EndsWith("Async"))
+            if (method.Name.EndsWith("Async", StringComparison.Ordinal))
                 return;
             if (method.IsAsyncMethod())
                 return;
             // Skip non EF methods
-            if (!_EfSyncMethods.Contains(method.Name))
+            if (!_EfSyncMethods.Contains(method.Name, StringComparer.Ordinal))
                 return;
 
             var receiver = memberAccess.Expression;
-            var receiverType = context.SemanticModel.GetTypeInfo(receiver).Type;
+            var receiverType = context.SemanticModel.GetTypeInfo(receiver, context.CancellationToken).Type;
             if (receiverType == null)
                 return;
 

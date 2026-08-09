@@ -12,20 +12,46 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!--<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>   
-    <NoPackageAnalysis>true</NoPackageAnalysis>-->
+    <!--<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>--> 
+    <NoPackageAnalysis>true</NoPackageAnalysis>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddAnalyzersToOutput</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.CodeFixes\Abaddax.Roslyn.Analyzers.CodeFixes.csproj" />
-    <ProjectReference Include="..\Abaddax.Roslyn.Analyzers\Abaddax.Roslyn.Analyzers.csproj" />
+    <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.CodeFixes\Abaddax.Roslyn.Analyzers.CodeFixes.csproj">
+      <AdditionalProperties>Version=$(Version)</AdditionalProperties>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>CodefixesOutput</OutputItemType>   
+    </ProjectReference>
+    <ProjectReference Include="..\Abaddax.Roslyn.Analyzers\Abaddax.Roslyn.Analyzers.csproj">
+      <AdditionalProperties>Version=$(Version)</AdditionalProperties>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>AnalyzersOutput</OutputItemType>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
     <None Include="build/**" Pack="true" PackagePath="build/" />
     <None Include="buildMultiTargeting/**" Pack="true" PackagePath="buildMultiTargeting/" />
   </ItemGroup>
+
+  <Target Name="ResigsterAnalyzersOutputForClean"
+          AfterTargets="ResolveReferences"
+          BeforeTargets="IncrementalClean">
+    <ItemGroup>
+      <FileWrites Include="@(AnalyzersOutput->'$(OutputPath)%(Filename)%(Extension)')" />
+      <FileWrites Include="@(CodefixesOutput->'$(OutputPath)%(Filename)%(Extension)')" />
+    </ItemGroup>
+  </Target>
+  <Target Name="CopyAnalyzersToOutput"
+          AfterTargets="Build">
+    <Copy SourceFiles="@(AnalyzersOutput)"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(CodefixesOutput)"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true" />
+  </Target>
 
   <Target Name="_AddAnalyzersToOutput"
           AfterTargets="Build"

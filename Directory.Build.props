@@ -4,5 +4,6 @@
     <Authors>Abaddax</Authors> 
     <RepositoryUrl>https://github.com/Abaddax/Abaddax.Roslyn.Analyzers.git</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 </Project>

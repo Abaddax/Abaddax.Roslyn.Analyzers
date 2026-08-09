@@ -36,18 +36,18 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             var methodBlock = invocation.GetContainingMethodDeclarationBlock();
             if (methodBlock == null)
                 return;
-            if (context.SemanticModel.GetDeclaredSymbol(methodBlock) is not IMethodSymbol callerMethod)
+            if (context.SemanticModel.GetDeclaredSymbol(methodBlock, context.CancellationToken) is not IMethodSymbol callerMethod)
                 return;
             // Skip inside sync methods
             if (!callerMethod.IsTaskedMethodDeclaration())
                 return;
 
-            var symbol = context.SemanticModel.GetSymbolInfo(invocation).Symbol;
+            var symbol = context.SemanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol;
             if (symbol is not IMethodSymbol method)
                 return;
 
             // Skip methods that already end with Async
-            if (method.Name.EndsWith("Async"))
+            if (method.Name.EndsWith("Async", StringComparison.Ordinal))
                 return;
             if (method.IsAsyncMethod())
                 return;
@@ -58,7 +58,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             // which may cause missing alternatives. So we use the actual type of the given variable instead
             if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)
             {
-                var typeInfo = context.SemanticModel.GetTypeInfo(memberAccess.Expression);
+                var typeInfo = context.SemanticModel.GetTypeInfo(memberAccess.Expression, context.CancellationToken);
                 receiverType = typeInfo.Type;
             }
             if (receiverType == null)
