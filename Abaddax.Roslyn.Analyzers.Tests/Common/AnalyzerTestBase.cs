@@ -14,6 +14,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Common
             return;
         }
 
+#pragma warning disable ABX0001 // Async method should accept CancellationToken
         protected Task VerifyAnalyzerAsync([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
             params DiagnosticResult[] expected)
         {
@@ -41,5 +42,6 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Common
             test.ExpectedDiagnostics.AddRange(expected);
             return test.RunAsync(CancellationToken.None);
         }
+#pragma warning restore ABX0001 // Async method should accept CancellationToken
     }
 }

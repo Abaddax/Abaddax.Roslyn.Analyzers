@@ -39,7 +39,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
 
             var options = context.Options.GetGlobalOptions(location.SourceTree);
 
-            var method = context.SemanticModel.GetDeclaredSymbol(methodDecl);
+            var method = context.SemanticModel.GetDeclaredSymbol(methodDecl, context.CancellationToken);
             if (method == null)
                 return;
 

@@ -39,14 +39,14 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
 
             // Only invocations directly on a DbSet<T> 
             var receiver = memberAccess.Expression;
-            var receiverType = context.SemanticModel.GetTypeInfo(receiver).Type;
+            var receiverType = context.SemanticModel.GetTypeInfo(receiver, context.CancellationToken).Type;
             if (receiverType == null)
                 return;
             if (!receiverType.IsDbSet())
                 return;
 
             // Skip methods that already have specific tracking behaviour
-            var symbol = context.SemanticModel.GetSymbolInfo(invocation).Symbol;
+            var symbol = context.SemanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol;
             if (symbol is not IMethodSymbol method)
                 return;
             if (method.HasName("AsTracking", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions") ||
