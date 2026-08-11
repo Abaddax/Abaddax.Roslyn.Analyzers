@@ -132,7 +132,12 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (methodSyntax == null)
                 yield break;
             if (!semanticModel.HasSameSyntaxTree(methodSyntax))
-                semanticModel = semanticModel.GetSemanticModelFor(methodSyntax);
+            {
+                var newSemanticModel = semanticModel.TryGetSemanticModelFor(methodSyntax);
+                if (newSemanticModel == null)
+                    yield break;
+                semanticModel = newSemanticModel;
+            }
 
             // 2. Add to callstack
             if (callStack.Count > maxCallStackDepth || !callStack.Add(targetMethod))
@@ -141,7 +146,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             {
                 // 3. Inherit variables from outer scope (crucial for local functions capturing variables)
                 // And map known argument constants to the method parameters
-                var knownArguments = GetArguments(invocation, semanticModel, outerArguments);
+                var knownArguments = GetArguments(invocation, semanticModel, outerArguments, cancellationToken);
 
                 // 4. Get the Operation Tree and CFG for the target method
                 var methodOperation = semanticModel.GetOperation(methodSyntax, cancellationToken);
@@ -251,7 +256,12 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (methodSyntax == null)
                 yield break;
             if (!semanticModel.HasSameSyntaxTree(methodSyntax))
-                semanticModel = semanticModel.GetSemanticModelFor(methodSyntax);
+            {
+                var newSemanticModel = semanticModel.TryGetSemanticModelFor(methodSyntax);
+                if (newSemanticModel == null)
+                    yield break;
+                semanticModel = newSemanticModel;
+            }
 
             // 2. Add to callstack
             if (callStack.Count > maxCallStackDepth || !callStack.Add(targetMethod))
@@ -260,7 +270,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             {
                 // 3. Inherit variables from outer scope (crucial for local functions capturing variables)
                 // And map known argument constants to the method parameters
-                var knownArguments = GetArguments(invocation, semanticModel, outerArguments);
+                var knownArguments = GetArguments(invocation, semanticModel, outerArguments, cancellationToken);
 
                 // 4. Get the Operation Tree and CFG for the target method
                 var methodOperation = semanticModel.GetOperation(methodSyntax, cancellationToken);
@@ -378,7 +388,12 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (methodBody == null)
                 yield break;
             if (!semanticModel.HasSameSyntaxTree(methodBody))
-                semanticModel = semanticModel.GetSemanticModelFor(methodBody);
+            {
+                var newSemanticModel = semanticModel.TryGetSemanticModelFor(methodBody);
+                if (newSemanticModel == null)
+                    yield break;
+                semanticModel = newSemanticModel;
+            }
 
             // 2. Get symbol to check for assignments
             var targetSymbol = semanticModel.GetSymbolInfo(expression, cancellationToken).Symbol;
@@ -555,7 +570,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     return operation;
 
                 // 2. Check for possible return values
-                var lastAssignments = GetPossibleReturnValuesInternal(invocation, semanticModel, null, outerArguments, callStack, maxCallStackDepth, cancellationToken);
+                var lastAssignments = GetPossibleReturnValuesInternal(invocation, semanticModel, cfg: null, outerArguments, callStack, maxCallStackDepth, cancellationToken);
                 var lastAssignment = lastAssignments.ExactlyOneOrDefault();
                 if (lastAssignment == null)
                     return operation;
@@ -566,11 +581,16 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     var currentCallStackInfo = new TraversalStackInfo(methodSyntax, invocation.TargetMethod, semanticModel, outerArguments, cfg);
 
                     if (!semanticModel.HasSameSyntaxTree(methodSyntax))
-                        semanticModel = semanticModel.GetSemanticModelFor(methodSyntax);
+                    {
+                        var newSemanticModel = semanticModel.TryGetSemanticModelFor(methodSyntax);
+                        if (newSemanticModel == null)
+                            return operation;
+                        semanticModel = newSemanticModel;
+                    }
 
                     // 4. Inherit variables from outer scope (crucial for local functions capturing variables)
                     // And map known argument constants to the method parameters
-                    outerArguments = GetArguments(invocation, semanticModel, outerArguments);
+                    outerArguments = GetArguments(invocation, semanticModel, outerArguments, cancellationToken);
 
                     // 5. Get the Operation Tree and CFG for the target method
                     var methodOperation = semanticModel.GetOperation(methodSyntax, cancellationToken);
@@ -610,11 +630,16 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     var currentCallStackInfo = new TraversalStackInfo(methodSyntax, outInvocation.TargetMethod, semanticModel, outerArguments, cfg);
 
                     if (!semanticModel.HasSameSyntaxTree(methodSyntax))
-                        semanticModel = semanticModel.GetSemanticModelFor(methodSyntax);
+                    {
+                        var newSemanticModel = semanticModel.TryGetSemanticModelFor(methodSyntax);
+                        if (newSemanticModel == null)
+                            return operation;
+                        semanticModel = newSemanticModel;
+                    }
 
                     // 4. Inherit variables from outer scope (crucial for local functions capturing variables)
                     // And map known argument constants to the method parameters
-                    outerArguments = GetArguments(outInvocation, semanticModel, outerArguments);
+                    outerArguments = GetArguments(outInvocation, semanticModel, outerArguments, cancellationToken);
 
                     // 5. Get the Operation Tree and CFG for the target method
                     var methodOperation = semanticModel.GetOperation(methodSyntax, cancellationToken);
@@ -658,11 +683,16 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         var currentCallStackInfo = new TraversalStackInfo(methodSyntax, parentInvocation.TargetMethod, semanticModel, outerArguments, cfg);
 
                         if (!semanticModel.HasSameSyntaxTree(methodSyntax))
-                            semanticModel = semanticModel.GetSemanticModelFor(methodSyntax);
+                        {
+                            var newSemanticModel = semanticModel.TryGetSemanticModelFor(methodSyntax);
+                            if (newSemanticModel == null)
+                                return operation;
+                            semanticModel = newSemanticModel;
+                        }
 
                         // 2 Inherit variables from outer scope (crucial for local functions capturing variables)
                         // And map known argument constants to the method parameters
-                        outerArguments = GetArguments(parentInvocation, semanticModel, outerArguments);
+                        outerArguments = GetArguments(parentInvocation, semanticModel, outerArguments, cancellationToken);
 
                         // 3. Add to callstack 
                         if (callStack.Count > maxCallStackDepth || !callStack.Add(currentCallStackInfo.Method))
@@ -814,7 +844,8 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         private static Dictionary<IParameterSymbol, ParameterValue> GetArguments(
             IInvocationOperation invocation,
             SemanticModel semanticModel,
-            IReadOnlyDictionary<IParameterSymbol, ParameterValue>? currentArguments)
+            IReadOnlyDictionary<IParameterSymbol, ParameterValue>? currentArguments,
+            CancellationToken cancellationToken)
         {
             var knownArguments = new Dictionary<IParameterSymbol, ParameterValue>(SymbolEqualityComparer.Default);
             if (currentArguments != null)
@@ -836,9 +867,9 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (invocation.Instance is IParameterReferenceOperation parameterReference &&
                 knownArguments.ContainsKey(parameterReference.Parameter))
             {
-                if (GetMethodSyntaxNode(invocation, knownArguments, default) is SyntaxNode delegateDefinition)
+                if (GetMethodSyntaxNode(invocation, knownArguments, cancellationToken) is SyntaxNode delegateDefinition)
                 {
-                    if (semanticModel.GetSymbolInfo(delegateDefinition).Symbol is IMethodSymbol delegateSymbol)
+                    if (semanticModel.GetSymbolInfo(delegateDefinition, cancellationToken).Symbol is IMethodSymbol delegateSymbol)
                     {
                         foreach (var arg in delegateSymbol.Parameters
                             .Zip(invocation.Arguments, (x, y) => (ActualParameter: x, DelegateParameter: y.Parameter)))
@@ -1011,7 +1042,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             IOperation? currentOp = paramRef;
             while (currentOp != null)
             {
-                if (currentOp is IAnonymousFunctionOperation || currentOp is ILocalFunctionOperation)
+                if (currentOp is IAnonymousFunctionOperation or ILocalFunctionOperation)
                 {
                     functionOp = currentOp;
                     break;
@@ -1070,7 +1101,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         yield break;
 
                     // 3. We can only analyze methods where we have the source code.
-                    var methodSyntax = GetMethodSyntaxNode(parentInvocation, null, cancellationToken);
+                    var methodSyntax = GetMethodSyntaxNode(parentInvocation, currentArguments: null, cancellationToken);
                     if (methodSyntax == null)
                         yield break;
 

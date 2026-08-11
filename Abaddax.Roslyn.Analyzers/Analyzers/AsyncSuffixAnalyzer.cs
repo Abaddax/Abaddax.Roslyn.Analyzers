@@ -29,7 +29,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             context.RegisterSyntaxNodeAction(AnalyzeMethod, SyntaxKind.MethodDeclaration);
         }
 
-        private void AnalyzeMethod(SyntaxNodeAnalysisContext context)
+        private static void AnalyzeMethod(SyntaxNodeAnalysisContext context)
         {
             var methodDecl = (MethodDeclarationSyntax)context.Node;
 

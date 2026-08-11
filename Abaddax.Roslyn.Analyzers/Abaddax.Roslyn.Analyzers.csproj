@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Abaddax.Build.Common" Version="0.0.1-preview7">
+    <PackageReference Include="Abaddax.Build.Common" Version="0.0.1-preview8">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

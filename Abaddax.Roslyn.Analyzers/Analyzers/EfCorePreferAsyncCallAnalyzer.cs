@@ -19,7 +19,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        private static readonly IReadOnlyCollection<string> _EfSyncMethods = new HashSet<string>()
+        private static readonly IReadOnlyCollection<string> _EfSyncMethods = new HashSet<string>(StringComparer.Ordinal)
         {
             "All",
             "Any",
@@ -51,7 +51,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             context.RegisterSyntaxNodeAction(AnalyzeInvocation, SyntaxKind.InvocationExpression);
         }
 
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+        private static void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {
             var invocation = (InvocationExpressionSyntax)context.Node;
 
@@ -92,7 +92,6 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             var diagnostic = Diagnostic.Create(_Rule, invocation.GetLocation(), method.Name);
             context.ReportDiagnostic(diagnostic);
         }
-
         private static bool ImplementsIQueryable(ITypeSymbol type)
         {
             if (type.HasName("IQueryable", "System.Linq"))

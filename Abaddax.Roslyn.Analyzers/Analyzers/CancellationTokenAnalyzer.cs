@@ -29,7 +29,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             context.RegisterSyntaxNodeAction(AnalyzeMethod, SyntaxKind.MethodDeclaration);
         }
 
-        private void AnalyzeMethod(SyntaxNodeAnalysisContext context)
+        private static void AnalyzeMethod(SyntaxNodeAnalysisContext context)
         {
             var methodDecl = (MethodDeclarationSyntax)context.Node;
 
@@ -58,7 +58,6 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             var diagnostic = Diagnostic.Create(_Rule, methodDecl.Identifier.GetLocation(), method.Name);
             context.ReportDiagnostic(diagnostic);
         }
-
         private static bool IsTestingMethod(IMethodSymbol method, AnalyzerConfigOptions options)
         {
             //Only if option is enabled

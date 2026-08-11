@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Abaddax.Roslyn.Analyzers.Tests.Common
 {
-    public abstract partial class SuppressorTestBase<TSuppressor>
+    public abstract class SuppressorTestBase<TSuppressor>
         where TSuppressor : DiagnosticSuppressor, new()
     {
         protected virtual void SetupTestState(SolutionState state)
