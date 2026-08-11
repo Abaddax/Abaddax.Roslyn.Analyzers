@@ -19,12 +19,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.CodeFixes\Abaddax.Roslyn.Analyzers.CodeFixes.csproj">
-      <AdditionalProperties>Version=$(Version)</AdditionalProperties>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>CodefixesOutput</OutputItemType>   
     </ProjectReference>
     <ProjectReference Include="..\Abaddax.Roslyn.Analyzers\Abaddax.Roslyn.Analyzers.csproj">
-      <AdditionalProperties>Version=$(Version)</AdditionalProperties>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>AnalyzersOutput</OutputItemType>
     </ProjectReference>
