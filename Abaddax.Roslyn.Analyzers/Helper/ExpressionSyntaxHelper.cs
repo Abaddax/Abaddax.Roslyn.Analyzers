@@ -51,7 +51,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         public abstract class ForwardingExpressionOrigin : ExpressionOrigin
         {
             public ExpressionOrigin Receiver { get; }
-            public ForwardingExpressionOrigin(ExpressionOrigin receiver)
+            protected ForwardingExpressionOrigin(ExpressionOrigin receiver)
             {
                 Receiver = receiver ?? throw new ArgumentNullException(nameof(receiver));
             }

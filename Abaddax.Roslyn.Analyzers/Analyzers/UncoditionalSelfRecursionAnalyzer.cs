@@ -29,7 +29,6 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             context.RegisterOperationBlockAction(AnalyzeOperationBlock);
         }
 
-
         private static void AnalyzeOperationBlock(OperationBlockAnalysisContext context)
         {
             // Both methods and properties will have a method as the owning symbol
@@ -130,7 +129,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             {
                 // Only check static calls and calls via this (explicit or implicit)
                 // But not 'other.Method()'!
-                if (invocation.Instance is null || invocation.Instance is IInstanceReferenceOperation)
+                if (invocation.Instance is null or IInstanceReferenceOperation)
                 {
                     if (SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.OriginalDefinition, method.OriginalDefinition))
                     {
@@ -143,7 +142,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             {
                 // Only check static props and props via this (explicit or implicit)
                 // But not 'other.Prop'!
-                if (propertyReference.Instance is null || propertyReference.Instance is IInstanceReferenceOperation)
+                if (propertyReference.Instance is null or IInstanceReferenceOperation)
                 {
                     if (SymbolEqualityComparer.Default.Equals(propertyReference.Property.GetMethod?.OriginalDefinition, method.OriginalDefinition) ||
                         SymbolEqualityComparer.Default.Equals(propertyReference.Property.SetMethod?.OriginalDefinition, method.OriginalDefinition))

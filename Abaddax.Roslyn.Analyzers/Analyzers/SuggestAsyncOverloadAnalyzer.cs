@@ -29,7 +29,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             context.RegisterSyntaxNodeAction(AnalyzeInvocation, SyntaxKind.InvocationExpression);
         }
 
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+        private static void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {
             var invocation = (InvocationExpressionSyntax)context.Node;
 
