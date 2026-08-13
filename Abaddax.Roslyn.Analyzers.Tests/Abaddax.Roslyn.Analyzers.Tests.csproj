@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Abaddax.Build.Common" Version="0.0.1-preview8">
+    <PackageReference Include="Abaddax.Build.Common" Version="0.0.1-preview10">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
