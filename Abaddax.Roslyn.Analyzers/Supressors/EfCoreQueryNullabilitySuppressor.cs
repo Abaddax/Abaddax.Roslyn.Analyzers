@@ -34,41 +34,42 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 if (!SupportedSuppressions.Any(x => x.SuppressedDiagnosticId == diagnostic.Id))
                     continue;
 
-                // Find the node that triggered the nullability warning
-                var tree = diagnostic.Location.SourceTree;
-                if (tree == null)
-                    continue;
+                ReportSuppression(diagnostic, context);
+            }
+        }
+        private void ReportSuppression(Diagnostic diagnostic, SuppressionAnalysisContext context)
+        {
+            // Find the node that triggered the nullability warning
+            var tree = diagnostic.Location.SourceTree;
+            if (tree == null)
+                return;
 
-                var options = context.Options.GetGlobalOptions(tree);
-                if (!options.IsEnabled(AnalyzerIdentifiers.EfCoreQueryNullReferenceSuppression, defaultValue: false))
-                    continue;
+            var options = context.Options.GetGlobalOptions(tree);
+            if (!options.IsEnabled(AnalyzerIdentifiers.EfCoreQueryNullReferenceSuppression, defaultValue: false))
+                return;
 
-                var root = tree.GetRoot(context.CancellationToken);
-                var node = root.FindNode(diagnostic.Location.SourceSpan);
-                if (node is not ExpressionSyntax expression)
-                    return;
+            var root = tree.GetRoot(context.CancellationToken);
+            var node = root.FindNode(diagnostic.Location.SourceSpan);
+            if (node is not ExpressionSyntax expression)
+                return;
 
-                var invocation = node.FirstAncestorOrSelf<InvocationExpressionSyntax>();
-                if (invocation == null)
-                    continue;
+            var invocation = node.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            if (invocation == null)
+                return;
 
-                var semanticModel = context.GetSemanticModel(tree);
+            var semanticModel = context.GetSemanticModel(tree);
 
-                if (IsInsideQuery(invocation, semanticModel, context.CancellationToken, out var queryInvocation))
+            if (IsInsideQuery(invocation, semanticModel, context.CancellationToken, out var queryInvocation))
+            {
+                if (IsCalledFromDbContext(queryInvocation, semanticModel, context.CancellationToken))
                 {
-                    if (IsCalledFromDbContext(queryInvocation, semanticModel, context.CancellationToken))
+                    if (IsQueryDelegateParameter(queryInvocation, expression, semanticModel, context.CancellationToken))
                     {
-                        if (IsQueryDelegateParameter(queryInvocation, expression, semanticModel, context.CancellationToken))
-                        {
 
-                            var descriptor = SupportedSuppressions
-                                .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
-                            if (descriptor != null)
-                            {
-                                context.ReportSuppression(
-                                    Suppression.Create(descriptor, diagnostic));
-                            }
-                        }
+                        var descriptor = SupportedSuppressions
+                            .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
+                        context.ReportSuppression(
+                            Suppression.Create(descriptor, diagnostic));
                     }
                 }
             }

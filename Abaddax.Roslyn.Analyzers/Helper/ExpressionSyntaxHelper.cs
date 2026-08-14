@@ -91,10 +91,6 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var methodBody = expression.GetContainingMethodDeclarationBlock();
-            if (methodBody == null)
-                return expression;
-
             var targetSymbol = semanticModel.GetSymbolInfo(expression, cancellationToken).Symbol;
             if (targetSymbol == null)
                 return expression;

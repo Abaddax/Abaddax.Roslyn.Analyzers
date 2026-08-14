@@ -29,29 +29,30 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 if (!SupportedSuppressions.Any(x => x.SuppressedDiagnosticId == diagnostic.Id))
                     continue;
 
-                // Find the node that triggered the warning
-                var tree = diagnostic.Location.SourceTree;
-                if (tree == null)
-                    continue;
-
-                var options = context.Options.GetGlobalOptions(tree);
-                if (!options.IsEnabled(AnalyzerIdentifiers.UnusedExceptionAssignmentSuppression, defaultValue: true))
-                    continue;
-
-                var root = tree.GetRoot(context.CancellationToken);
-                var node = root.FindNode(diagnostic.Location.SourceSpan);
-
-                if (node is not CatchDeclarationSyntax)
-                    continue;
-
-                var descriptor = SupportedSuppressions
-                    .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
-                if (descriptor != null)
-                {
-                    context.ReportSuppression(
-                        Suppression.Create(descriptor, diagnostic));
-                }
+                ReportSuppression(diagnostic, context);
             }
+        }
+        private void ReportSuppression(Diagnostic diagnostic, SuppressionAnalysisContext context)
+        {
+            // Find the node that triggered the warning
+            var tree = diagnostic.Location.SourceTree;
+            if (tree == null)
+                return;
+
+            var options = context.Options.GetGlobalOptions(tree);
+            if (!options.IsEnabled(AnalyzerIdentifiers.UnusedExceptionAssignmentSuppression, defaultValue: true))
+                return;
+
+            var root = tree.GetRoot(context.CancellationToken);
+            var node = root.FindNode(diagnostic.Location.SourceSpan);
+
+            if (node is not CatchDeclarationSyntax)
+                return;
+
+            var descriptor = SupportedSuppressions
+                .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
+            context.ReportSuppression(
+                Suppression.Create(descriptor, diagnostic));
         }
     }
 }
