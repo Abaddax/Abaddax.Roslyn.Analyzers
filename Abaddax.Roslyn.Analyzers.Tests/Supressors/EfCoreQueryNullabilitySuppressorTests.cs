@@ -216,6 +216,39 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                 );
         }
         [Test]
+        public async Task ShouldSuppressIfDbContextFactory()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                { 
+                    public static class Container
+                    {
+                        public static TestContext CreateDb() => new();
+                    }
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var q = Container.CreateDb().Persons
+                                .Include(x => x.Mother).ThenInclude(x => {|#0:x|}.Father)
+                                .Include(x => x.Mother).ThenInclude(x => {|#1:x|}.Mother);
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(true)
+                );
+        }
+        [Test]
         public async Task ShouldSuppressIfLinqInsideQuery()
         {
             var source =
@@ -274,6 +307,5 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                     .WithIsSuppressed(true)
                 );
         }
-
     }
 }
