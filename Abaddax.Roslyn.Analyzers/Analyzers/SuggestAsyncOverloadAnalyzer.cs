@@ -1,4 +1,5 @@
 using Abaddax.Roslyn.Analyzers.Extensions;
+using Abaddax.Roslyn.Analyzers.Helper;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -75,10 +76,17 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
         private static bool HasAsyncAlternative(IMethodSymbol callerMethod, IMethodSymbol method, ITypeSymbol receiverType, SemanticModel semanticModel, int position)
         {
             var candidates = PotentialAsyncAlternatives(method, receiverType, semanticModel, position)
+                // Do not suggest original method! Otherwise this could unintentianally cause a stack overflow 
+                .Where(candidate => !SymbolEqualityComparer.Default.Equals(candidate, callerMethod))
+                // Do not suggest obsolete methods
+                .Where(candidate => !candidate.GetAttributes().Any(attr => attr.AttributeClass?.HasName("ObsoleteAttribute", "System") ?? false))
+                // Validate compatible return
                 .Where(candidate => candidate.IsAsyncCompatibleReturnType())
-                .Where(candidate => HasSupersetOfParameterTypes(candidate, method, semanticModel, position));
-            // Do not suggest original method! Otherwise this could unintentianally cause a stack overflow 
-            if (candidates.Any(x => !SymbolEqualityComparer.Default.Equals(x, callerMethod)))
+                .Where(candidate => HasCompatibleReturnType(candidate, method, semanticModel, position))
+                // Validate compatible arguments
+                .Where(candidate => HasCompatibleParameters(candidate, method, semanticModel, position));
+
+            if (candidates.Any())
                 return true;
             return false;
         }
@@ -87,105 +95,107 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
         {
             var name = method.Name;
             var targetName = name + "Async";
-            return MethodExtensions.ListPotentialAlternatives(receiverType, targetName, semanticModel, position);
+            return MethodExtensions.ListPotentialAlternatives(receiverType, targetName, semanticModel, position)
+                // Convert extension methods to reduced-form for correct parameter matching
+                .Select(alternative =>
+                {
+                    if (!alternative.IsExtensionMethod)
+                        return alternative;
+                    var reducedAlternative = alternative.ReduceExtensionMethod(receiverType);
+                    return reducedAlternative;
+                })
+                // Deduce generic parameters and construct generic methods
+                .Select(alternative =>
+                {
+                    if (alternative == null)
+                        return null;
+                    if (!alternative.IsGenericMethod)
+                        return alternative;
+                    // Original type arguments
+                    var genericArguments = method.TypeArguments;
+                    // Check rought generic matches
+                    if (genericArguments.Length != 0 && genericArguments.Length > alternative.TypeArguments.Length)
+                        return null;
+                    // Original was non generic, but alternative is generic
+                    // -> deduce generic arguments
+                    while (genericArguments.Length < alternative.TypeArguments.Length)
+                    {
+                        // Current type argument to deduce
+                        var typeArgument = alternative.TypeArguments[genericArguments.Length];
+                        // Already non generic?
+                        if (typeArgument is not ITypeParameterSymbol)
+                        {
+                            genericArguments = genericArguments.Add(typeArgument);
+                            continue;
+                        }
+                        var candidateTypes = alternative.Parameters
+                            .Select((x, i) => (x.Type, Index: i))
+                            .Where(x => SymbolEqualityComparer.Default.Equals(x.Type, typeArgument))
+                            .Select(x => method.Parameters.ElementAtOrDefault(x.Index)?.Type)
+                            .Where(x => x != null)
+                            .Select(x => x!)
+                            .ToList();
+                        if (SymbolEqualityComparer.Default.Equals(alternative.ReturnType, typeArgument))
+                            candidateTypes.Add(method.ReturnType);
+                        // No match or ambigous match found
+                        if (candidateTypes.Distinct(SymbolEqualityComparer.Default).ExactlyOneOrDefault() is not ITypeSymbol candidateType)
+                            return null;
+                        genericArguments = genericArguments.Add(candidateType);
+                    }
+                    return TypeCompatibilityHelper.ConstructGenericMethod(alternative.OriginalDefinition, genericArguments, genericArguments.Select(x => x.NullableAnnotation).ToImmutableArray(), semanticModel);
+                })
+                .Where(alternative => alternative != null)
+                .Select(alternative => alternative!);
         }
-        private static bool HasSupersetOfParameterTypes(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod, SemanticModel semanticModel, int position)
+        private static bool HasCompatibleReturnType(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod, SemanticModel semanticModel, int position)
+        {
+            var candidateTaskReturn = candidateMethod.ReturnType.GetGenericParameter(0) ?? semanticModel.Compilation.GetSpecialType(SpecialType.System_Void);
+            return TypeCompatibilityHelper.IsTypeAlternative(candidateTaskReturn, baselineMethod.ReturnType, semanticModel, position);
+        }
+        private static bool HasCompatibleParameters(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod, SemanticModel semanticModel, int position)
         {
             if (baselineMethod.Parameters.Length > candidateMethod.Parameters.Length)
                 return false;
-            return baselineMethod.Parameters
-                .All(baselineParameter
-                    => candidateMethod.Parameters.Any(candidateParameter
-                        => IsAsyncParameterAlternative(candidateParameter, baselineParameter, semanticModel, position)));
-        }
-        private static bool IsAsyncParameterAlternative(IParameterSymbol canditateParameter, IParameterSymbol baselineParameter, SemanticModel semanticModel, int position)
-        {
-            return IsAsyncTypeAlternative(canditateParameter.Type, baselineParameter.Type, semanticModel, position);
-        }
-        private static bool IsAsyncTypeAlternative(ITypeSymbol canditateType, ITypeSymbol baselineType, SemanticModel semanticModel, int position)
-        {
-            // Exact match
-            if (SymbolEqualityComparer.Default.Equals(canditateType, baselineType))
+            var length = Math.Max(baselineMethod.Parameters.Length, candidateMethod.Parameters.Length);
+            if (length == 0)
                 return true;
-            // Convertable match
-            if (semanticModel.Compilation.ClassifyConversion(baselineType, canditateType).Exists ||
-                semanticModel.Compilation.ClassifyConversion(canditateType, baselineType).Exists)
-            {
-                return true;
-            }
-            // Is Array-like
-            if (IsArrayLikeEquivalent(canditateType, baselineType))
-            {
-                return true;
-            }
-            // Has conversion via ToX()/AsX()
-            if (HasConversionMethod(canditateType, baselineType, semanticModel, position))
-            {
-                return true;
-            }
-            // Has convertsion via property
-            if (HasConversionProperty(canditateType, baselineType))
-            {
-                return true;
-            }
-            return false;
-        }
-        private static bool HasConversionMethod(ITypeSymbol canditateType, ITypeSymbol baselineType, SemanticModel semanticModel, int position)
-        {
-            var canditateTypeName = canditateType.Name;
-            if (canditateType is IArrayTypeSymbol)
-                canditateTypeName = "Array";
-            var targetNames = canditateTypeName switch
-            {
-                //Do not consider ToString a valid conversion!
-                "String" => new[] { "AsString" },
-                _ => new[] { $"To{canditateTypeName}", $"As{canditateTypeName}" }
-            };
+            var baselineParameters = baselineMethod.Parameters
+                .Concat(Enumerable.Repeat((IParameterSymbol?)null, Math.Max(0, baselineMethod.Parameters.Length - length)))
+                .Select((x, i) => (Index: i, BaselineParameter: x));
+            var candidateParameters = candidateMethod.Parameters
+                .Concat(Enumerable.Repeat((IParameterSymbol?)null, Math.Max(0, candidateMethod.Parameters.Length - length)))
+                .Select((x, i) => (Index: i, CandidateParameter: x));
+            var parameters = baselineParameters
+                .Join(candidateParameters,
+                    baseline => baseline.Index,
+                    candidate => candidate.Index,
+                    (baseline, candidate) => (baseline.Index, baseline.BaselineParameter, candidate.CandidateParameter))
+                .OrderBy(x => x.Index)
+                .Select(x => (x.BaselineParameter, x.CandidateParameter));
 
-            foreach (var targetName in targetNames)
+            // Check parameter compatibility
+            var foundUnmatchedCancallationToken = false;
+            foreach (var parameter in parameters)
             {
-                if (MethodExtensions.ListPotentialAlternatives(baselineType, targetName, semanticModel, position)
-                    .Any(x => IsAsyncTypeAlternative(x.ReturnType, canditateType, semanticModel, position)))
+                if (parameter.CandidateParameter == null)
+                    return false; // No match found
+                if (foundUnmatchedCancallationToken)
+                    return false; // Additional 'CancellationToken' is not at the end
+                if (parameter.BaselineParameter == null)
                 {
-                    return true;
+                    // Allow additional 'CancellationToken' at the end
+                    if (parameter.CandidateParameter.Type.HasName("CancellationToken", "System.Threading"))
+                    {
+                        foundUnmatchedCancallationToken = true;
+                        continue;
+                    }
+                    // Everything else -> no match -> fail
+                    return false;
                 }
+                if (!TypeCompatibilityHelper.IsTypeAlternative(parameter.CandidateParameter.Type, parameter.BaselineParameter.Type, semanticModel, position))
+                    return false;
             }
-            return false;
-        }
-        private static bool HasConversionProperty(ITypeSymbol canditateType, ITypeSymbol baselineType)
-        {
-            if (baselineType is not INamedTypeSymbol named)
-                return false;
-
-            return named.GetMembers()
-                .OfType<IPropertySymbol>()
-                .Any(p => SymbolEqualityComparer.Default.Equals(p.Type, canditateType));
-        }
-        private static bool IsArrayLikeEquivalent(ITypeSymbol canditateType, ITypeSymbol baselineType)
-        {
-            if (!IsArrayLikeType(canditateType))
-                return false;
-            if (!IsArrayLikeType(baselineType))
-                return false;
-
-            var canditateElementType = canditateType.GetGenericParameter(0);
-            var baselineElementType = baselineType.GetGenericParameter(0);
-
-            return
-                canditateElementType is not null &&
-                baselineElementType is not null &&
-                SymbolEqualityComparer.Default.Equals(canditateElementType, baselineElementType);
-
-            static bool IsArrayLikeType(ITypeSymbol type)
-            {
-                return
-                    type.HasName("Array", "System") ||
-                    type.HasName("Span", "System") ||
-                    type.HasName("ReadOnlySpan", "System") ||
-                    type.HasName("Memory", "System") ||
-                    type.HasName("ReadOnlyMemory", "System") ||
-                    type.HasName("ArraySegment", "System");
-            }
+            return true;
         }
     }
 }

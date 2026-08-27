@@ -240,6 +240,43 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 );
         }
         [Test]
+        public async Task ShouldSuggestAsyncOverloadIfGenericExtensionCall()
+        {
+            var source =
+                """
+                using System;
+                using System.Collections.Generic;
+                using System.Threading.Tasks;
+
+                namespace TestNamespace
+                {
+                    public class Test : List<int>
+                    {
+                        public Task<int[]> Main()
+                        {
+                            var x = {|#0:this.ToArray(1)|};
+                            return Task.FromResult(x);
+                        }
+                        public int[] ToArray(int n)
+                        {
+                            return [n];
+                        }
+                    }
+                    public static class Extension
+                    {
+                        public static Task<T[]> ToArrayAsync<T, T2>(this IEnumerable<T> test, T2 n)
+                        {
+                            return Task.FromResult(Array.Empty<T>());
+                        }
+                    }
+                }
+                """;
+            await VerifyAnalyzerAsync(source,
+                new DiagnosticResult(AnalyzerIdentifiers.PreferAsyncOverloadAnalyzer, DiagnosticSeverity.Info)
+                    .WithLocation(0)
+                );
+        }
+        [Test]
         public async Task ShouldSuggestAsyncOverloadIfTypeRoughlyMatch()
         {
             var source =
@@ -286,6 +323,42 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 );
         }
         [Test]
+        public async Task ShouldSuggestAsyncOverloadIfAdditionalCancallationTokenParameter()
+        {
+            var source =
+                """
+                using System;                
+                using System.Collections.Generic;
+                using System.Linq;                
+                using System.Threading;
+                using System.Threading.Tasks;
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public Task<int> Main()
+                        {
+                            var x = {|#0:Func(default)|};
+                            return Task.FromResult(x);
+                        }
+                        public int Func(string x)
+                        {
+                            return 1;
+                        }
+                        public Task<int> FuncAsync(string x, CancellationToken cancalltionToken)
+                        {
+                            return Task.FromResult(1);
+                        }
+                    }
+                }
+                """;
+            await VerifyAnalyzerAsync(source,
+                new DiagnosticResult(AnalyzerIdentifiers.PreferAsyncOverloadAnalyzer, DiagnosticSeverity.Info)
+                    .WithLocation(0)
+                );
+        }
+        [Test]
         public async Task ShouldNotSuggestAsyncOverloadInSyncMethod()
         {
             var source =
@@ -315,7 +388,6 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 """;
             await VerifyAnalyzerAsync(source);
         }
-
         [Test]
         public async Task ShouldNotSuggestAsyncOverloadWithMissingParameters()
         {
@@ -396,6 +468,72 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                         {
                             var result = Func(x);
                             return Task.FromResult(result);
+                        }
+                    }
+                }
+                """;
+            await VerifyAnalyzerAsync(source);
+        }
+        [Test]
+        public async Task ShouldSuggestAsyncOverloadIfDifferentButCompatibleGenericConstraints()
+        {
+            var source =
+                """
+                using System;
+                using System.Threading.Tasks;
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public Task<int> Main()
+                        {
+                            var x = {|#0:Func<int>(1)|};
+                            return Task.FromResult(x);
+                        }
+                        public int Func<TStruct>(TStruct x)
+                            where TStruct : struct
+                        {
+                            return 1;
+                        }
+                        public Task<int> FuncAsync<T>(T x)
+                        {
+                            return Task.FromResult(1);
+                        }
+                    }
+                }
+                """;
+            await VerifyAnalyzerAsync(source,
+              new DiagnosticResult(AnalyzerIdentifiers.PreferAsyncOverloadAnalyzer, DiagnosticSeverity.Info)
+                  .WithLocation(0)
+              );
+        }
+        [Test]
+        public async Task ShouldNotSuggestAsyncOverloadIfDifferentGenericConstraints()
+        {
+            var source =
+                """
+                using System;
+                using System.Threading.Tasks;
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public Task<int> Main()
+                        {
+                            var x = Func<int>(1);
+                            return Task.FromResult(x);
+                        }
+                        public int Func<T>(T x)
+                            where T : struct
+                        {
+                            return 1;
+                        }
+                        public Task<int> FuncAsync<T>(T x)
+                            where T : class
+                        {
+                            return Task.FromResult(1);
                         }
                     }
                 }
