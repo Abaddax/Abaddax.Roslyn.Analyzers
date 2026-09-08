@@ -89,7 +89,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                         var descriptor = SupportedSuppressions
                             .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
                         context.ReportSuppression(
-                          Suppression.Create(descriptor, diagnostic));
+                            Suppression.Create(descriptor, diagnostic));
                     }
                 }
             }
@@ -224,11 +224,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             }
 
             if (!isCalledFromDbContext)
-            {
-                isCalledFromDbContext = false;
                 return [];
-            }
-            isCalledFromDbContext = true;
             return propertyChain.ToArray();
         }
         /// <summary>
@@ -262,7 +258,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                             if (symbol is IMethodSymbol method)
                             {
                                 if (method.HasName("Include", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions") &&
-                                   currentPropertyChain.Count == 1)
+                                    currentPropertyChain.Count == 1)
                                 {
                                     if (CheckIncludeProperty(invocation))
                                         return true;
