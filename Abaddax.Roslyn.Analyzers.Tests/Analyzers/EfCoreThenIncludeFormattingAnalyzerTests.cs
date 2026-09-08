@@ -6,8 +6,8 @@ using NUnit.Framework;
 
 namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
 {
-    public sealed class EfCoreExplicitTrackingAnalyzerTests
-        : AnalyzerTestBase<EfCoreExplicitTrackingAnalyzer>
+    public sealed class EfCoreThenIncludeFormattingAnalyzerTests
+        : AnalyzerTestBase<EfCoreThenIncludeFormattingAnalyzer>
     {
         protected override void SetupTestState(SolutionState state)
         {
@@ -40,18 +40,13 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                     public static class EntityFrameworkQueryableExtensions
                     {
                         #pragma warning disable CS0626
-                        public static extern IQueryable<TEntity> AsNoTracking<TEntity>(
-                            this IQueryable<TEntity> source)
-                            where TEntity : class;
-                        public static extern IQueryable<TEntity> AsNoTrackingWithIdentityResolution<TEntity>(
-                            this IQueryable<TEntity> source)
-                            where TEntity : class;
-                        public static extern IQueryable<TEntity> AsTracking<TEntity>(
-                            this IQueryable<TEntity> source)
-                            where TEntity : class;
                         public static extern IIncludableQueryable<TEntity, TProperty> Include<TEntity, TProperty>(
                             this IQueryable<TEntity> source,
                             Expression<Func<TEntity, TProperty>> navigationPropertyPath)
+                            where TEntity : class;
+                        public static extern IIncludableQueryable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
+                            this IIncludableQueryable<TEntity, TPreviousProperty> source,
+                            Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath) 
                             where TEntity : class;
                         public static extern Task<TSource> FirstAsync<TSource>(
                             this IQueryable<TSource> source,
@@ -83,12 +78,11 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                     }
                 }
                 """);
-
             base.SetupTestState(state);
         }
 
         [Test]
-        public async Task ShouldSuggestMissingTrackingBehaviour()
+        public async Task ShouldSuggestIndentationIfSameLevel()
         {
             var source =
                 """
@@ -100,19 +94,42 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                         {
                             var db = new TestContext();
                 
-                            var p = {|#0:db.Persons|}
+                            var p = {|#0:db.Persons
+                                .Include(x => x.Mother)
+                                .ThenInclude(x => x.Father)|}
                                 .First();
                         }
                     }
                 }
                 """;
             await VerifyAnalyzerAsync(source,
-                new DiagnosticResult(AnalyzerIdentifiers.EfCoreExplicitTrackingAnalyzer, DiagnosticSeverity.Info)
+                new DiagnosticResult(AnalyzerIdentifiers.EfCoreThenIncludeFormattingAnalyzer, DiagnosticSeverity.Info)
                     .WithLocation(0)
                 );
         }
         [Test]
-        public async Task ShouldNotSuggestTrackingBehaviourIfSpecified()
+        public async Task ShouldNotSuggestIndentationIfSameLine()
+        {
+            var source =
+                """
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var db = new TestContext();
+                
+                            var p = db.Persons.Include(x => x.Mother).ThenInclude(x => x.Father).ThenInclude(x => x.Father)
+                                .First();
+                        }
+                    }
+                }
+                """;
+            await VerifyAnalyzerAsync(source);
+        }
+        [Test]
+        public async Task ShouldNotSuggestIndentationIfOneMoreLevel()
         {
             var source =
                 """
@@ -125,39 +142,15 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                             var db = new TestContext();
                 
                             var p = db.Persons
-                                .AsNoTracking()
+                                .Include(x => x.Mother)
+                                    .ThenInclude(x => x.Father)
+                                        .ThenInclude(x => x.Father)
                                 .First();
                         }
                     }
                 }
                 """;
             await VerifyAnalyzerAsync(source);
-        }
-        [Test]
-        public async Task ShouldSuggestTrackingBehaviourOutOfOrder()
-        {
-            var source =
-                """
-                namespace TestNamespace
-                {
-                    public class Test
-                    {
-                        public void Func()
-                        {
-                            var db = new TestContext();
-                
-                            var p = {|#0:db.Persons|}
-                                .Include(x => x.Mother)
-                                .AsNoTracking()
-                                .First();
-                        }
-                    }
-                }
-                """;
-            await VerifyAnalyzerAsync(source,
-                new DiagnosticResult(AnalyzerIdentifiers.EfCoreExplicitTrackingAnalyzer, DiagnosticSeverity.Info)
-                    .WithLocation(0)
-                );
         }
 
     }
