@@ -84,7 +84,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 canditateTypeName = "Array";
             var targetNames = canditateTypeName switch
             {
-                //Do not consider ToString a valid conversion!
+                // Do not consider ToString a valid conversion!
                 "String" => new[] { "AsString" },
                 _ => new[] { $"To{canditateTypeName}", $"As{canditateTypeName}" }
             };
@@ -160,7 +160,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             ImmutableArray<NullableAnnotation> typeArgumentNullableAnnotations,
             SemanticModel semanticModel)
         {
-            //Get root generic definition
+            // Get root generic definition
             while (!SymbolEqualityComparer.Default.Equals(genericMethod.OriginalDefinition, genericMethod))
                 genericMethod = genericMethod.OriginalDefinition;
 

@@ -233,7 +233,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 return false;
             }
 
-            //Get lambda parameters
+            // Get lambda parameters
             var lambdaParameters = argument.Value.Syntax switch
             {
                 SimpleLambdaExpressionSyntax s => [semanticModel.GetDeclaredSymbol(s.Parameter, cancellationToken)],

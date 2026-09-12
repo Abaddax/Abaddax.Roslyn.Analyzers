@@ -49,7 +49,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 {
                     var diagnostic = Diagnostic.Create(_Rule, method.Locations[0], method.Name);
                     context.ReportDiagnostic(diagnostic);
-                    //Only report once per method
+                    // Only report once per method
                     break;
                 }
             }
@@ -77,21 +77,21 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 if (!visited.Add(currentBlock))
                     continue;
 
-                // 1. Check if the block contains a recursiv call
+                // Check if the block contains a recursiv call
                 if (BlockContainsRecursivCall(currentBlock, method))
                 {
                     foundRecursion = true;
                     continue; // Stop exploring this specific execution path
                 }
 
-                // 2. If we reached the exit cleanly without hiting a recursion
+                // If we reached the exit cleanly without hiting a recursion
                 // This means there is a safe path to exit
                 if (currentBlock.Kind == BasicBlockKind.Exit)
                 {
                     return false;
                 }
 
-                // 3. Enqueue the next blocks in the flow
+                // Enqueue the next blocks in the flow
                 if (currentBlock.ConditionalSuccessor?.Destination != null)
                     queue.Enqueue(currentBlock.ConditionalSuccessor.Destination);
                 if (currentBlock.FallThroughSuccessor?.Destination != null)

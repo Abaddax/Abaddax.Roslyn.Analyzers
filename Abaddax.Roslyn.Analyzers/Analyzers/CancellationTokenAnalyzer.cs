@@ -60,7 +60,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
         }
         private static bool IsTestingMethod(IMethodSymbol method, AnalyzerConfigOptions options)
         {
-            //Only if option is enabled
+            // Only if option is enabled
             if (!options.IsSet(AnalyzerIdentifiers.AddCancellationTokenAnalyzer, "ignore_tests", defaultValue: true))
                 return false;
 

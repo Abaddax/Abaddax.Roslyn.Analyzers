@@ -13,7 +13,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
         {
             get
             {
-                //Create IDE0060 analyzer
+                // Create IDE0060 analyzer
                 var type = Type.GetType("Microsoft.CodeAnalysis.CSharp.RemoveUnusedParametersAndValues.CSharpRemoveUnusedParametersAndValuesDiagnosticAnalyzer, Microsoft.CodeAnalysis.CSharp.Features",
                     throwOnError: true)!;
                 var analyzer = (DiagnosticAnalyzer)Activator.CreateInstance(type)!;

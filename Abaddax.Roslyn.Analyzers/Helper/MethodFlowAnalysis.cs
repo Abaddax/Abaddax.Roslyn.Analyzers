@@ -135,7 +135,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         {
             IMethodSymbol targetMethod = invocation.TargetMethod;
 
-            // 1. We can only analyze methods where we have the source code.
+            // We can only analyze methods where we have the source code.
             var methodSyntax = GetMethodSyntaxNode(invocation, outerArguments, cancellationToken);
             if (methodSyntax == null)
                 yield break;
@@ -147,16 +147,16 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 semanticModel = newSemanticModel;
             }
 
-            // 2. Add to callstack
+            // Add to callstack
             if (callStack.Count > maxCallStackDepth || !callStack.Add(targetMethod))
                 yield break;
             try
             {
-                // 3. Inherit variables from outer scope (crucial for local functions capturing variables)
+                // Inherit variables from outer scope (crucial for local functions capturing variables)
                 // And map known argument constants to the method parameters
                 var knownArguments = GetArguments(invocation, semanticModel, outerArguments, cancellationToken);
 
-                // 4. Get the Operation Tree and CFG for the target method
+                // Get the Operation Tree and CFG for the target method
                 var methodOperation = semanticModel.GetOperation(methodSyntax, cancellationToken);
                 if (methodOperation == null)
                     yield break;
@@ -164,7 +164,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                     yield break;
 
-                // 5. Traverse the CFG contextually
+                // Traverse the CFG contextually
                 var visited = new HashSet<BasicBlock>();
                 var queue = new Queue<BasicBlock>();
                 queue.Enqueue(cfg.Blocks[0]); // Start at the Entry block
@@ -197,7 +197,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                             yield return res;
                     }
 
-                    // 6. Evaluate branching based on our known arguments
+                    // Evaluate branching based on our known arguments
                     if (currentBlock.ConditionalSuccessor != null)
                     {
                         bool? conditionResult = EvaluateCondition(currentBlock.BranchValue, knownArguments);
@@ -259,7 +259,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (targetParameter == null)
                 yield break;
 
-            // 1. We can only analyze methods where we have the source code.
+            // We can only analyze methods where we have the source code.
             var methodSyntax = GetMethodSyntaxNode(invocation, outerArguments, cancellationToken);
             if (methodSyntax == null)
                 yield break;
@@ -271,16 +271,16 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 semanticModel = newSemanticModel;
             }
 
-            // 2. Add to callstack
+            // Add to callstack
             if (callStack.Count > maxCallStackDepth || !callStack.Add(targetMethod))
                 yield break;
             try
             {
-                // 3. Inherit variables from outer scope (crucial for local functions capturing variables)
+                // Inherit variables from outer scope (crucial for local functions capturing variables)
                 // And map known argument constants to the method parameters
                 var knownArguments = GetArguments(invocation, semanticModel, outerArguments, cancellationToken);
 
-                // 4. Get the Operation Tree and CFG for the target method
+                // Get the Operation Tree and CFG for the target method
                 var methodOperation = semanticModel.GetOperation(methodSyntax, cancellationToken);
                 if (methodOperation == null)
                     yield break;
@@ -288,7 +288,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                     yield break;
 
-                // 5. Traverse the CFG contextually
+                // Traverse the CFG contextually
                 // Track visited states. We track BOTH the block and the current operation 
                 // to prevent infinite loops while still allowing different paths to reach 
                 // the same block with different assigned out-values.
@@ -331,7 +331,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         }
                     }
 
-                    // 6. Evaluate branching based on our known arguments
+                    // Evaluate branching based on our known arguments
                     if (currentBlock.ConditionalSuccessor != null)
                     {
                         bool? conditionResult = EvaluateCondition(currentBlock.BranchValue, knownArguments);
@@ -391,7 +391,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 yield break;
             expression = expression.IgnoreCasts().IgnoreNullSuppression();
 
-            // 1.  We can only analyze methods where we have the source code.
+            // We can only analyze methods where we have the source code.
             var methodBody = expression.GetContainingMethodDeclarationBlock();
             if (methodBody == null)
                 yield break;
@@ -403,12 +403,12 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 semanticModel = newSemanticModel;
             }
 
-            // 2. Get symbol to check for assignments
+            // Get symbol to check for assignments
             var targetSymbol = semanticModel.GetSymbolInfo(expression, cancellationToken).Symbol;
             if (targetSymbol == null)
                 yield break;
 
-            // 3. Get the Operation Tree and CFG for the target method
+            // Get the Operation Tree and CFG for the target method
             var methodOperation = semanticModel.GetOperation(methodBody, cancellationToken);
             if (methodOperation == null)
                 yield break;
@@ -416,20 +416,18 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                 yield break;
 
-            // 4. Locate the starting BasicBlock and our index within it
+            // Locate the starting BasicBlock and our index within it
             FindStartingBlock(cfg, variable.Syntax,
                 out var startBlock,
                 out var usageIndex);
-            // 4.1 Did not find index, so we scan the entire method
+            // Did not find index, so we scan the entire method
             if (startBlock == null || usageIndex == null)
             {
                 startBlock = cfg.Blocks.Last();
                 usageIndex = startBlock.Operations.Length - 1;
             }
-            //if (startBlock == null || usageIndex == null)
-            //    yield break;
 
-            // 5. Traverse backwards
+            // Traverse backwards
             var visited = new HashSet<BasicBlock>();
             var queue = new Queue<(BasicBlock Block, int StartIndex)>();
             queue.Enqueue((startBlock, usageIndex.Value));
@@ -485,12 +483,12 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                                 if (x.Operation is IInvocationOperation invocation &&
                                     invocation.TargetMethod.MethodKind is MethodKind.LocalFunction or MethodKind.LambdaMethod or MethodKind.DelegateInvoke)
                                 {
-                                    // 1. Get CFG for the target method
+                                    // Get CFG for the target method
                                     var localCfg = cfg.GetLocalFunctionCfg(invocation.TargetMethod, cancellationToken);
                                     if (localCfg == null)
                                         return x;
 
-                                    // 2. Add to callstack
+                                    // Add to callstack
                                     if (callStack.Count > maxCallStackDepth || !callStack.Add(invocation.TargetMethod))
                                         return x;
                                     try
@@ -555,7 +553,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // 1. Check if current call traversal is finished
+            // Check if current call traversal is finished
             while (callStackInfo.Count > 0)
             {
                 var previousCallStackInfo = callStackInfo.Peek();
@@ -569,25 +567,25 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 callStackInfo.Pop();
             }
 
-            // 2. Check for abort condition
+            // Check for abort condition
             if (onTraverseCallback != null && !onTraverseCallback.Invoke(operation))
                 return operation;
 
-            // 3. Step into invocations
+            // Step into invocations
             if (operation is IInvocationOperation invocation)
             {
-                // 1. We can only analyze methods where we have the source code.
+                // We can only analyze methods where we have the source code.
                 var methodSyntax = GetMethodSyntaxNode(invocation, outerArguments, cancellationToken);
                 if (methodSyntax == null)
                     return operation;
 
-                // 2. Check for possible return values
+                // Check for possible return values
                 var lastAssignments = GetPossibleReturnValuesInternal(invocation, semanticModel, cfg: null, outerArguments, callStack, maxCallStackDepth, cancellationToken);
                 var lastAssignment = lastAssignments.ExactlyOneOrDefault();
                 if (lastAssignment == null)
                     return operation;
 
-                // 3. Check if last assignment is inside the invocation method
+                // Check if last assignment is inside the invocation method
                 if (methodSyntax.Contains(lastAssignment.Syntax))
                 {
                     var currentCallStackInfo = new TraversalStackInfo(methodSyntax, invocation.TargetMethod, semanticModel, outerArguments, cfg);
@@ -600,11 +598,11 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         semanticModel = newSemanticModel;
                     }
 
-                    // 4. Inherit variables from outer scope (crucial for local functions capturing variables)
+                    // Inherit variables from outer scope (crucial for local functions capturing variables)
                     // And map known argument constants to the method parameters
                     outerArguments = GetArguments(invocation, semanticModel, outerArguments, cancellationToken);
 
-                    // 5. Get the Operation Tree and CFG for the target method
+                    // Get the Operation Tree and CFG for the target method
                     var methodOperation = semanticModel.GetOperation(methodSyntax, cancellationToken);
                     if (methodOperation == null)
                         return operation;
@@ -612,31 +610,31 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                         return operation;
 
-                    // 6. Add to callstack 
+                    // Add to callstack 
                     if (callStack.Count > maxCallStackDepth || !callStack.Add(currentCallStackInfo.Method))
                         return operation;
                     callStackInfo.Push(currentCallStackInfo);
                 }
 
-                // 7. Traverse function call with all the currently known parameters
+                // Traverse function call with all the currently known parameters
                 return TraverseAssignmentsInternal(lastAssignment, semanticModel, cfg, outerArguments, callStack, callStackInfo, maxCallStackDepth, onTraverseCallback, cancellationToken);
             }
             else if (operation.Parent is IArgumentOperation argument &&
                 argument.Parameter?.RefKind is RefKind.Out or RefKind.Ref &&
                 argument.Parent is IInvocationOperation outInvocation)
             {
-                // 1. We can only analyze methods where we have the source code.
+                // We can only analyze methods where we have the source code.
                 var methodSyntax = GetMethodSyntaxNode(outInvocation, outerArguments, cancellationToken);
                 if (methodSyntax == null)
                     return operation;
 
-                // 2. Check for possible out values
+                // Check for possible out values
                 var lastAssignments = GetPossibleOutParameterValuesInternal(outInvocation, argument, semanticModel, cfg, outerArguments, callStack, maxCallStackDepth, cancellationToken);
                 var lastAssignment = lastAssignments.ExactlyOneOrDefault();
                 if (lastAssignment == null)
                     return operation;
 
-                // 3. Check if last assignment is inside the invocation method
+                // Check if last assignment is inside the invocation method
                 if (methodSyntax.Contains(lastAssignment.Syntax))
                 {
                     var currentCallStackInfo = new TraversalStackInfo(methodSyntax, outInvocation.TargetMethod, semanticModel, outerArguments, cfg);
@@ -649,11 +647,11 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         semanticModel = newSemanticModel;
                     }
 
-                    // 4. Inherit variables from outer scope (crucial for local functions capturing variables)
+                    // Inherit variables from outer scope (crucial for local functions capturing variables)
                     // And map known argument constants to the method parameters
                     outerArguments = GetArguments(outInvocation, semanticModel, outerArguments, cancellationToken);
 
-                    // 5. Get the Operation Tree and CFG for the target method
+                    // Get the Operation Tree and CFG for the target method
                     var methodOperation = semanticModel.GetOperation(methodSyntax, cancellationToken);
                     if (methodOperation == null)
                         return operation;
@@ -661,13 +659,13 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                         return operation;
 
-                    // 6. Add to callstack 
+                    // Add to callstack 
                     if (callStack.Count > maxCallStackDepth || !callStack.Add(currentCallStackInfo.Method))
                         return operation;
                     callStackInfo.Push(currentCallStackInfo);
                 }
 
-                // 7. Traverse function call with all the currently known parameters
+                // Traverse function call with all the currently known parameters
                 return TraverseAssignmentsInternal(lastAssignment, semanticModel, cfg, outerArguments, callStack, callStackInfo, maxCallStackDepth, onTraverseCallback, cancellationToken);
             }
             else
@@ -687,7 +685,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     // Check if we are inside the caller body
                     if (possibleCallingOperation.ParentInvocation is IInvocationOperation parentInvocation)
                     {
-                        // 1. We can only analyze methods where we have the source code.
+                        // We can only analyze methods where we have the source code.
                         var methodSyntax = GetMethodSyntaxNode(parentInvocation, outerArguments, cancellationToken);
                         if (methodSyntax == null)
                             return operation;
@@ -702,11 +700,11 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                             semanticModel = newSemanticModel;
                         }
 
-                        // 2 Inherit variables from outer scope (crucial for local functions capturing variables)
+                        // Inherit variables from outer scope (crucial for local functions capturing variables)
                         // And map known argument constants to the method parameters
                         outerArguments = GetArguments(parentInvocation, semanticModel, outerArguments, cancellationToken);
 
-                        // 3. Add to callstack 
+                        // Add to callstack 
                         if (callStack.Count > maxCallStackDepth || !callStack.Add(currentCallStackInfo.Method))
                             return operation;
                         callStackInfo.Push(currentCallStackInfo);
@@ -792,7 +790,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             IReadOnlyDictionary<IParameterSymbol, ParameterValue>? currentArguments,
             CancellationToken cancellationToken)
         {
-            // 1. Normal invocation
+            // Normal invocation
             if (!invocation.TargetMethod.DeclaringSyntaxReferences.IsDefaultOrEmpty)
             {
                 var syntaxRef = invocation.TargetMethod.DeclaringSyntaxReferences.ExactlyOneOrDefault();
@@ -801,12 +799,12 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 return syntaxRef.GetSyntax(cancellationToken);
             }
 
-            // 2. A delegate invocation has the delegate variable as its 'Instance' 
+            // A delegate invocation has the delegate variable as its 'Instance' 
             var delegateInstance = invocation.Instance?.IgnoreCasts();
             if (delegateInstance == null)
                 return null;
 
-            // 3. Is the delegate referencing a parameter?
+            // Is the delegate referencing a parameter?
             if (delegateInstance is IParameterReferenceOperation paramRef &&
                 paramRef.Parameter != null)
             {
@@ -817,13 +815,13 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 delegateInstance = parameterValue.Parameter.IgnoreCasts();
             }
 
-            // 4. Check delegate creation
+            // Check delegate creation
             if (delegateInstance is IDelegateCreationOperation delegateCreation)
             {
                 delegateInstance = delegateCreation.Target;
             }
 
-            // 5. Get lambda syntax
+            // Get lambda syntax
             if (delegateInstance is IAnonymousFunctionOperation anonymousFunction)
             {
                 return anonymousFunction.Syntax;
@@ -833,7 +831,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 return flowAnonymousFunction.Syntax;
             }
 
-            // 6. Handle methods passed as delegates
+            // Handle methods passed as delegates
             if (delegateInstance is IMethodReferenceOperation methodReference)
             {
                 var syntaxRef = methodReference.Method.DeclaringSyntaxReferences.ExactlyOneOrDefault();
@@ -998,7 +996,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             usageIndex = null;
             foreach (var block in cfg.Blocks)
             {
-                // 1. Scan the main Operations array
+                // Scan the main Operations array
                 for (int i = 0; i < block.Operations.Length; i++)
                 {
                     var topLevelOp = block.Operations[i];
@@ -1017,7 +1015,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 if (startBlock != null)
                     break; // Found it!
 
-                // 2. Scan the BranchValue (e.g., the condition of an 'if', 'while', or 'return' statement)
+                // Scan the BranchValue (e.g., the condition of an 'if', 'while', or 'return' statement)
                 if (block.BranchValue != null &&
                     block.BranchValue.Syntax != null &&
                     block.BranchValue.Syntax.Span.Contains(variableUsageNode.Span))
@@ -1044,12 +1042,12 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (targetParam.ContainingSymbol is not IMethodSymbol methodSymbol)
                 yield break;
 
-            // 1. Get the index of our parameter (e.g. '(a,b)=>...', 'a' is index 0)
+            // Get the index of our parameter (e.g. '(a,b)=>...', 'a' is index 0)
             int paramIndex = methodSymbol.Parameters.IndexOf(targetParam, 0, methodSymbol.Parameters.Length, SymbolEqualityComparer.Default);
             if (paramIndex == -1)
                 yield break;
 
-            // 2. Walk up the Operation Tree to find the Lambda or Local Function block
+            // Walk up the Operation Tree to find the Lambda or Local Function block
             IOperation? functionOp = null;
             IOperation? currentOp = paramRef;
             while (currentOp != null)
@@ -1076,12 +1074,12 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     if (callerCfg == null)
                         yield break;
 
-                    // 1. Find all direct calls to this local function in the caller CFG
+                    // Find all direct calls to this local function in the caller CFG
                     foreach (var invocation in callerCfg.ListAllOperations().OfType<IInvocationOperation>())
                     {
                         if (SymbolEqualityComparer.Default.Equals(invocation.TargetMethod, methodSymbol))
                         {
-                            // 2. Found, return argument caller value
+                            // Found, return argument caller value
                             yield return (invocation.Arguments[paramIndex].Value, null);
                         }
                     }
@@ -1092,7 +1090,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 {
                     var usage = anonymousFunction.Parent?.IgnoreCasts();
 
-                    // 1. Unwrap implicit delegate creation
+                    // Unwrap implicit delegate creation
                     if (usage is IDelegateCreationOperation delegateCreation)
                         usage = delegateCreation.Parent;
 
@@ -1107,17 +1105,17 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         yield break;
                     }
 
-                    // 2. Get the delegate parameter 
+                    // Get the delegate parameter 
                     var delegateParam = argument.Parameter; // This is `selector`
                     if (delegateParam == null)
                         yield break;
 
-                    // 3. We can only analyze methods where we have the source code.
+                    // We can only analyze methods where we have the source code.
                     var methodSyntax = GetMethodSyntaxNode(parentInvocation, currentArguments: null, cancellationToken);
                     if (methodSyntax == null)
                         yield break;
 
-                    // 5. Get the Operation Tree and CFG for the target method
+                    // Get the Operation Tree and CFG for the target method
                     var methodOperation = semanticModel.GetOperation(methodSyntax, cancellationToken);
                     if (methodOperation == null)
                         yield break;
@@ -1125,7 +1123,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                         yield break;
 
-                    // 6. Find delegate invocation inside CFG
+                    // Find delegate invocation inside CFG
                     foreach (var invocation in cfg.ListAllOperations().OfType<IInvocationOperation>())
                     {
                         if (invocation.TargetMethod.MethodKind != MethodKind.DelegateInvoke)
@@ -1133,11 +1131,11 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         var instance = invocation.Instance?.IgnoreCasts();
                         if (instance == null)
                             continue;
-                        // 7. Check the delegate invocation parameters to match the delegate parameter
+                        // Check the delegate invocation parameters to match the delegate parameter
                         if (instance is IParameterReferenceOperation delParamRef &&
                             SymbolEqualityComparer.Default.Equals(delParamRef.Parameter, delegateParam))
                         {
-                            // 8. Found, return argument caller value
+                            // Found, return argument caller value
                             yield return (invocation.Arguments[paramIndex].Value, parentInvocation);
                         }
                     }
