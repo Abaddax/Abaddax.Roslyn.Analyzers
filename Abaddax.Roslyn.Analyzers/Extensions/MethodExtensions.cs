@@ -82,14 +82,14 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
         }
         public static bool IsTestingMethod(this IMethodSymbol method)
         {
-            return method.GetAttributes()
-               .Any(attr =>
+            return method.GetAttributes(attr =>
                    //MSTest
-                   (attr.AttributeClass?.HasName("TestMethodAttribute", "Microsoft.VisualStudio.TestTools.UnitTesting") ?? false) ||
+                   attr.HasName("TestMethodAttribute", "Microsoft.VisualStudio.TestTools.UnitTesting") ||
                    //NUnit
-                   (attr.AttributeClass?.HasName("TestAttribute", "NUnit.Framework") ?? false) ||
+                   attr.HasName("TestAttribute", "NUnit.Framework") ||
                    //XUnit
-                   (attr.AttributeClass?.HasName("FactAttribute", "Xunit") ?? false));
+                   attr.HasName("FactAttribute", "Xunit"))
+                .Any();
         }
 
         public static IEnumerable<IMethodSymbol> ListPotentialAlternatives(ITypeSymbol receiverType, string targetName, SemanticModel semanticModel, int position)

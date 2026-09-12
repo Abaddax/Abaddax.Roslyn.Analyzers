@@ -300,6 +300,33 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
         }
         [Test]
+        public void ShouldExpandLocalFunctionOutDeclarations()
+        {
+            var result = ProcessOrigin(
+                """
+                using System;
+                
+                public class Test
+                {
+                    public void X(out int y)
+                    {
+                        var x = 1;
+                        y = x;
+                        x = 3;
+                    }
+
+                    public void Func()
+                    {
+                        X(out var x);
+                        [|x|].ToString();
+                    }
+                }
+                """);
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+        }
+        [Test]
         public void ShouldExpandForwardingLocalFunctionAssignments()
         {
             var result = ProcessOrigin(

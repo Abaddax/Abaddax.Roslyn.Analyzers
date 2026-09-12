@@ -18,5 +18,23 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                 return first;
             return default;
         }
+        public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> source)
+        {
+            return source
+                .Where(x => x != null)
+                .Select(x => x!);
+        }
+        public static IEnumerable<string> WhereNotNullOrEmpty(this IEnumerable<string?> source)
+        {
+            return source
+                .Where(x => !string.IsNullOrEmpty(x))
+                .Select(x => x!);
+        }
+        public static IEnumerable<string> WhereNotNullOrWhiteSpace(this IEnumerable<string?> source)
+        {
+            return source
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x!);
+        }
     }
 }

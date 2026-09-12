@@ -20,6 +20,15 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Common
             return references;
         }
 
+
+        protected virtual IEnumerable<MetadataReference> AdditionalReferences
+        {
+            get
+            {
+                yield break;
+            }
+        }
+
         public void Parse([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
             out SemanticModel semanticModel,
             out SyntaxNode syntaxNode,
@@ -32,7 +41,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Common
             var compilation = CSharpCompilation.Create(
                 assemblyName: "Tests",
                 syntaxTrees: [tree],
-                references: GetSystemMetadataReferences(),
+                references: GetSystemMetadataReferences().Concat(AdditionalReferences),
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
 
             semanticModel = compilation.GetSemanticModel(tree);

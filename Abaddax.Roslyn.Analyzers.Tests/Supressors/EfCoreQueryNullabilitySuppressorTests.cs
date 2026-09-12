@@ -1,6 +1,8 @@
 using Abaddax.Roslyn.Analyzers.Supressors;
 using Abaddax.Roslyn.Analyzers.Tests.Common;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 
 namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
@@ -21,38 +23,6 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                 """);
             state.Sources.Add(
                 """
-                namespace Microsoft.EntityFrameworkCore
-                {
-                    public class DbContext;
-                    public class DbSet<TEntity> : IQueryable<TEntity>
-                        where TEntity : class
-                    {
-                        Type IQueryable.ElementType => throw new NotImplementedException();
-                        Expression IQueryable.Expression => throw new NotImplementedException();
-                        IQueryProvider IQueryable.Provider => throw new NotImplementedException();
-                        IEnumerator<TEntity> IEnumerable<TEntity>.GetEnumerator() => throw new NotImplementedException();
-                        IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
-                    }
-                    public static class EntityFrameworkQueryableExtensions
-                    {
-                        #pragma warning disable CS0626
-                        public static extern IIncludableQueryable<TEntity, TProperty> Include<TEntity, TProperty>(
-                            this IQueryable<TEntity> source,
-                            Expression<Func<TEntity, TProperty>> navigationPropertyPath)
-                            where TEntity : class;
-                        public static extern IIncludableQueryable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
-                            this IIncludableQueryable<TEntity, TPreviousProperty> source,
-                            Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath) 
-                            where TEntity : class;
-                    }
-                    namespace Query
-                    {
-                        public interface IIncludableQueryable<out TEntity, out TProperty> : IQueryable<TEntity>;
-                    }
-                }
-                """);
-            state.Sources.Add(
-                """
                 #nullable enable
 
                 namespace TestNamespace
@@ -65,7 +35,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                             public TestEntity? Father { get; set; }
                             public List<TestEntity> Childs { get; set; } = new();
                         }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
+                        public DbSet<TestEntity> Persons { get; set; } = null!;
                     }
                 }
                 """);
@@ -78,7 +48,9 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
 
                     [*.cs]
                     dotnet_diagnostic.CS1591.severity = none
+                    dotnet_diagnostic.CS8019.severity = none
                     """));
+            state.AdditionalReferences.Add(MetadataReference.CreateFromFile(typeof(DbContext).Assembly.Location));
             base.SetupTestState(state);
         }
 
