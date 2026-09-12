@@ -39,6 +39,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             {
                 if (!SupportedSuppressions.Any(x => x.SuppressedDiagnosticId == diagnostic.Id))
                     continue;
+
                 ReportSuppression(diagnostic, context);
             }
         }
@@ -174,7 +175,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 return false;
 
             // Analyze the EF Core Linq chain
-            return CheckQueryChainForInclude(origin, propertyChain.ToArray(), semanticModel, cancellationToken);
+            return CheckQueryChainForInclude(origin, propertyChain, semanticModel, cancellationToken);
         }
         /// <summary>
         /// Build the property path referenced by <paramref name="origin"/>
@@ -405,7 +406,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             foreach (var chain in includedProperyChains)
             {
                 // Check if one of the attribues garantees the current needed property includes
-                if (chain.Take(propertyChain.Length).SequenceEqual(propertyChain.Reverse(), StringComparer.Ordinal))
+                if (chain.Take(propertyChain.Length).SequenceEqual(propertyChain.AsEnumerable().Reverse(), StringComparer.Ordinal))
                     return true;
             }
             return false;
