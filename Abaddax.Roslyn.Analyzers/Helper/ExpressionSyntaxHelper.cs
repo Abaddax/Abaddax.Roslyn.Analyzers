@@ -134,7 +134,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            //Unwrap forwarded variable assignements. var x = Func(); var y = x -> y = Func()
+            // Unwrap forwarded variable assignements. var x = Func(); var y = x -> y = Func()
             expression = TraverseAssignments(expression, semanticModel, cancellationToken,
                 onTraverseCallback: onTraverseCallback)
                 .IgnoreCasts()
@@ -142,7 +142,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
 
             switch (expression)
             {
-                //Unwrap nested property access
+                // Unwrap nested property access
                 case MemberAccessExpressionSyntax memberAccess:
                 {
                     var receiver = TryExpand(memberAccess.Expression, semanticModel, cancellationToken,
@@ -154,14 +154,14 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         return null;
                     return new MemberExpressionOrigin(receiver, member);
                 }
-                //Unwrap nested property access via indexer
+                // Unwrap nested property access via indexer
                 case ElementAccessExpressionSyntax elementAccess:
                 {
                     var receiver = TryExpand(elementAccess.Expression, semanticModel, cancellationToken,
                          onTraverseCallback: onTraverseCallback);
                     return receiver;
                 }
-                //Unwrap awaits
+                // Unwrap awaits
                 case AwaitExpressionSyntax asyncAccess:
                 {
                     var receiver = TryExpand(asyncAccess.Expression, semanticModel, cancellationToken,
@@ -170,7 +170,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         return null;
                     return new AsyncSyntaxExpressionOrigin(receiver);
                 }
-                //Unwrap invocations
+                // Unwrap invocations
                 case InvocationExpressionSyntax invocation:
                 {
                     var receiver = TryExpand(invocation.Expression, semanticModel, cancellationToken,
@@ -178,7 +178,6 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     if (receiver == null)
                         return new SyntaxExpressionOrigin(expression);
                     return new InvocationSyntaxExpressionOrigin(receiver, invocation);
-                    //return receiver;
                 }
                 default:
                     return new SyntaxExpressionOrigin(expression);

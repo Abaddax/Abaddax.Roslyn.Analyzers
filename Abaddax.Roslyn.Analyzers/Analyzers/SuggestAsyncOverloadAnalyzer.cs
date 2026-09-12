@@ -65,7 +65,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             if (receiverType == null)
                 return;
 
-            //Check type
+            // Check type
             if (!HasAsyncAlternative(callerMethod, method, receiverType, context.SemanticModel, invocation.Expression.SpanStart))
                 return;
 

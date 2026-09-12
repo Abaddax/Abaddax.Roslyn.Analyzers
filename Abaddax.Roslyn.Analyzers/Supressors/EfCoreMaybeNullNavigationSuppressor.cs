@@ -63,12 +63,12 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
 
             var semanticModel = context.GetSemanticModel(tree);
 
-            //Unwrap variable assignments
+            // Unwrap variable assignments
             if (node is IdentifierNameSyntax identifier)
             {
                 node = TraverseAssignments(identifier, semanticModel, context.CancellationToken);
             }
-            //Unwarp awaits
+            // Unwarp awaits
             if (node is AwaitExpressionSyntax asyncAccess)
             {
                 node = asyncAccess.Expression;
@@ -76,7 +76,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             // Nested property access
             if (node is MemberAccessExpressionSyntax memberAccess)
             {
-                //1. Check if the property has the [MaybeNull] attribute
+                // Check if the property has the [MaybeNull] attribute
                 var symbol = semanticModel.GetSymbolInfo(memberAccess, context.CancellationToken).Symbol;
                 if (symbol is IPropertySymbol propertySymbol &&
                     HasMaybeNullAttribute(propertySymbol))
@@ -86,10 +86,10 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                     if (origin == null)
                         return;
 
-                    //2. Trace the variable back to see if it was included
+                    // Trace the variable back to see if it was included
                     if (IsPropertyIncludedInQuery(origin, semanticModel, context.CancellationToken))
                     {
-                        //Condition met! Suppress the warning.
+                        // Condition met! Suppress the warning.
                         var descriptor = SupportedSuppressions
                             .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
                         context.ReportSuppression(
@@ -100,7 +100,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             // Direct variable access e.g. when query.Select(x => x.Prop).A
             if (node is InvocationExpressionSyntax invocation)
             {
-                //1. Check if the select points to property with [MaybeNull] attribute
+                // Check if the select points to property with [MaybeNull] attribute
                 if (IsMaybeNullProperySelection(invocation, semanticModel, context.CancellationToken))
                 {
                     var origin = TryExpand(invocation, semanticModel, context.CancellationToken,
@@ -108,14 +108,14 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                     if (origin == null)
                         return;
 
-                    //1. Check if from EF query
+                    // Check if from EF query
                     _ = BuildPropertyChain(origin, semanticModel, context.CancellationToken, out var isCalledFromDbContext);
                     if (isCalledFromDbContext)
                     {
-                        //2. Trace the variable back to see if it was included
+                        // Trace the variable back to see if it was included
                         if (IsPropertyIncludedInQuery(origin, semanticModel, context.CancellationToken))
                         {
-                            //Condition met! Suppress the warning.
+                            // Condition met! Suppress the warning.
                             var descriptor = SupportedSuppressions
                                 .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
                             context.ReportSuppression(

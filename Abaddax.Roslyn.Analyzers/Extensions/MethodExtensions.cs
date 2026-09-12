@@ -7,7 +7,7 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
     {
         public static bool IsEntryPoint(this IMethodSymbol method, SyntaxNodeAnalysisContext context)
         {
-            //Entry point is always static
+            // Entry point is always static
             if (!method.IsStatic)
                 return false;
             var entryPoint = context.Compilation.GetEntryPoint(context.CancellationToken);
@@ -83,18 +83,18 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
         public static bool IsTestingMethod(this IMethodSymbol method)
         {
             return method.GetAttributes(attr =>
-                   //MSTest
+                   // MSTest
                    attr.HasName("TestMethodAttribute", "Microsoft.VisualStudio.TestTools.UnitTesting") ||
-                   //NUnit
+                   // NUnit
                    attr.HasName("TestAttribute", "NUnit.Framework") ||
-                   //XUnit
+                   // XUnit
                    attr.HasName("FactAttribute", "Xunit"))
                 .Any();
         }
 
         public static IEnumerable<IMethodSymbol> ListPotentialAlternatives(ITypeSymbol receiverType, string targetName, SemanticModel semanticModel, int position)
         {
-            //Check type and bases
+            // Check type and bases
             var current = receiverType;
             while (current != null)
             {
@@ -107,7 +107,7 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                 current = current.BaseType;
             }
 
-            //Check interfaces
+            // Check interfaces
             foreach (var interfaceType in receiverType.AllInterfaces)
             {
                 foreach (var candidate in interfaceType.GetMembers()
@@ -118,7 +118,7 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                 }
             }
 
-            //Check extensions
+            // Check extensions
             var extensionMethods = MethodExtensions.ListExtensionMethodsFor(receiverType, semanticModel, position);
             foreach (var candidate in extensionMethods
                 .Where(x => x.Name == targetName))
