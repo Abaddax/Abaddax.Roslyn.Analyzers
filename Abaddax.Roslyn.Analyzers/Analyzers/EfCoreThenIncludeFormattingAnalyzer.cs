@@ -68,11 +68,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 return;
             }
 
-            if (!options.TryGetValue("indent_size", out var indentSizeStr) ||
-                !int.TryParse(indentSizeStr, out int indentSize))
-            {
-                indentSize = 4;
-            }
+            var indentSize = options.GetValueOrDefault("indent_size", int.TryParse, 4);
 
             var thenIncludePosition = GetPosition(memberAccess, indentSize);
             var includePosition = GetPosition(parentMemberAccess, indentSize);

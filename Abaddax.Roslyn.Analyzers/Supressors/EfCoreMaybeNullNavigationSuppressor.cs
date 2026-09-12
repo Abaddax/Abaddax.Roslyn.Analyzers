@@ -1,7 +1,10 @@
 using Abaddax.Roslyn.Analyzers.Extensions;
+using Abaddax.Roslyn.Analyzers.Helper;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
 using System.Collections.Immutable;
 using static Abaddax.Roslyn.Analyzers.Helper.ExpressionSyntaxHelper;
 
@@ -78,7 +81,8 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 if (symbol is IPropertySymbol propertySymbol &&
                     HasMaybeNullAttribute(propertySymbol))
                 {
-                    var origin = TryExpand(memberAccess, semanticModel, context.CancellationToken);
+                    var origin = TryExpand(memberAccess, semanticModel, context.CancellationToken,
+                        onTraverseCallback: TraverseCallback);
                     if (origin == null)
                         return;
 
@@ -99,7 +103,8 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 //1. Check if the select points to property with [MaybeNull] attribute
                 if (IsMaybeNullProperySelection(invocation, semanticModel, context.CancellationToken))
                 {
-                    var origin = TryExpand(invocation, semanticModel, context.CancellationToken);
+                    var origin = TryExpand(invocation, semanticModel, context.CancellationToken,
+                        onTraverseCallback: TraverseCallback);
                     if (origin == null)
                         return;
 
@@ -119,6 +124,32 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                     }
                 }
             }
+
+            static bool TraverseCallback(IOperation operation)
+            {
+                // Return of a marked method
+                if (operation is IInvocationOperation invocation)
+                {
+                    if (invocation.TargetMethod
+                        .GetReturnTypeAttributes(AttributeHelper.IsEfCorePropertyIncludedAttribute)
+                        .Any())
+                    {
+                        return false;
+                    }
+                }
+                // Out parameter of a method 
+                if (operation.Parent is IArgumentOperation { Parameter: not null } argument &&
+                    argument.Parameter.RefKind == RefKind.Out)
+                {
+                    if (argument.Parameter
+                        .GetAttributes(AttributeHelper.IsEfCorePropertyIncludedAttribute)
+                        .Any())
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
 
         /// <summary>
@@ -126,8 +157,8 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
         /// </summary>
         private static bool HasMaybeNullAttribute(IPropertySymbol propertySymbol)
         {
-            return propertySymbol.GetAttributes()
-                .Any(attr => attr.AttributeClass?.HasName("MaybeNullAttribute", "System.Diagnostics.CodeAnalysis") ?? false);
+            return propertySymbol.GetAttributes("MaybeNullAttribute", "System.Diagnostics.CodeAnalysis")
+                .Any();
         }
         /// <summary>
         /// Check if the <paramref name="origin"/> path is included in the query
@@ -178,8 +209,8 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                         origin = parentMemberAccess.Receiver;
                         continue;
                     }
-                    case InvocationSyntaxExpressionOrigin invocation
-                        when invocation.Invocation.Expression is MemberAccessExpressionSyntax methodAccess:
+                    case InvocationSyntaxExpressionOrigin invocation when
+                        invocation.Invocation.Expression is MemberAccessExpressionSyntax methodAccess:
                     {
                         var symbol = semanticModel
                             .GetSymbolInfo(methodAccess, cancellationToken)
@@ -223,9 +254,17 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 }
             }
 
-            if (!isCalledFromDbContext)
-                return [];
-            return propertyChain.ToArray();
+            if (isCalledFromDbContext)
+                return propertyChain.ToArray();
+
+            // Check for EfCorePropertyIncludedAttribute
+            if (FindEfCorePropertyIncludedAttributeChains(origin, semanticModel, cancellationToken).Any())
+            {
+                // Act as if it was a db query
+                isCalledFromDbContext = true;
+                return propertyChain.ToArray();
+            }
+            return [];
         }
         /// <summary>
         /// Check if the <paramref name="origin"/> in included in the query via Include/ThenInclude
@@ -239,9 +278,12 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             if (propertyChain.Length == 0)
                 return false;
 
+            var includedProperyChains = new List<string[]>();
+            var currentPropertyChain = new List<string>();
+            var selectPropertyChain = new List<string>();
+
             // Walk down the method invocation chain (e.g., context.Blogs.Include(...).Where(...))
             var current = origin;
-            var currentPropertyChain = propertyChain.ToList();
             while (current is not SyntaxExpressionOrigin and not null)
             {
                 switch (current)
@@ -257,35 +299,43 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
 
                             if (symbol is IMethodSymbol method)
                             {
-                                if (method.HasName("Include", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions") &&
-                                    currentPropertyChain.Count == 1)
+                                if (method.HasName("Include", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions"))
                                 {
-                                    if (CheckIncludeProperty(invocation))
-                                        return true;
-                                    //Current Include.ThenInclude chain finished -> reset
-                                    currentPropertyChain = propertyChain.ToList();
+                                    var propertyName = GetIncludedProperty(invocation);
+                                    if (propertyName != null && !string.IsNullOrWhiteSpace(propertyName))
+                                        currentPropertyChain.Insert(0, propertyName);
+
+                                    //Start new include chain
+                                    includedProperyChains.Add(currentPropertyChain.ToArray());
+                                    currentPropertyChain = selectPropertyChain.ToList();
                                 }
-                                else if (method.HasName("ThenInclude", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions") &&
-                                    currentPropertyChain.Count > 1)
+                                else if (method.HasName("ThenInclude", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions"))
                                 {
-                                    if (CheckIncludeProperty(invocation))
-                                        return true;
+                                    var propertyName = GetIncludedProperty(invocation);
+                                    if (propertyName != null && !string.IsNullOrWhiteSpace(propertyName))
+                                        currentPropertyChain.Insert(0, propertyName);
                                 }
                                 else if (method.HasName("Select", "System.Linq", "Queryable") || method.HasName("SelectMany", "System.Linq", "Queryable"))
                                 {
-                                    var result = CheckSelectProperty(invocation);
-                                    if (result == null)
+                                    var propertyName = GetSelectProperty(invocation);
+                                    if (propertyName == null)
                                         return false; //Unsupported Select syntax -> abort
-                                    if (result == true)
-                                        return true;
+                                    if (propertyName != null && !string.IsNullOrWhiteSpace(propertyName))
+                                        selectPropertyChain.Insert(0, propertyName);
+                                }
+                                else if (method.GetReturnTypeAttributes(AttributeHelper.IsEfCorePropertyIncludedAttribute).Any())
+                                {
+                                    var included = method
+                                        .GetReturnTypeAttributes(AttributeHelper.IsEfCorePropertyIncludedAttribute)
+                                        .ParseConstructorArguments(AttributeHelper.ParseEfCorePropertyIncludedAttribute)
+                                        .WhereNotNullOrWhiteSpace()
+                                        .Select(x => x.Split(['.'], StringSplitOptions.RemoveEmptyEntries))
+                                        .Where(x => x.Length > 0);
+                                    includedProperyChains.AddRange(included);
                                 }
                             }
 
-                            // Move up the chain
-                            current = invocationOrigin.Receiver;
-                            break;
-
-                            bool CheckIncludeProperty(InvocationExpressionSyntax invocation)
+                            static string? GetIncludedProperty(InvocationExpressionSyntax invocation)
                             {
                                 // Check if the argument points to our property (e.g., b => b.Posts)
                                 var argument = invocation.ArgumentList.Arguments.FirstOrDefault();
@@ -294,17 +344,12 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                                 {
                                     if (bodyExpression.IgnoreCasts().IgnoreNullSuppression() is MemberAccessExpressionSyntax lambdaMember)
                                     {
-                                        // Found one layer of the property path
-                                        if (currentPropertyChain[0] == lambdaMember.Name.Identifier.Text)
-                                            currentPropertyChain.RemoveAt(0);
-                                        // Found full property path
-                                        if (currentPropertyChain.Count == 0)
-                                            return true;
+                                        return lambdaMember.Name.Identifier.Text;
                                     }
                                 }
-                                return false;
+                                return null;
                             }
-                            bool? CheckSelectProperty(InvocationExpressionSyntax invocation)
+                            static string? GetSelectProperty(InvocationExpressionSyntax invocation)
                             {
                                 // Check if the argument points to our property (e.g., b => b.Posts)
                                 var argument = invocation.ArgumentList.Arguments.FirstOrDefault();
@@ -314,21 +359,16 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                                     if (bodyExpression.IgnoreCasts().IgnoreNullSuppression() is MemberAccessExpressionSyntax lambdaMember)
                                     {
                                         // Found one layer of the property path
-                                        if (currentPropertyChain[0] == lambdaMember.Name.Identifier.Text)
-                                            currentPropertyChain.RemoveAt(0);
-                                        // Found full property path
-                                        if (currentPropertyChain.Count == 0)
-                                            return true;
-                                        return false;
+                                        return lambdaMember.Name.Identifier.Text;
                                     }
                                 }
                                 return null;
                             }
                         }
-                        else
-                        {
-                            break;
-                        }
+
+                        // Move up the chain
+                        current = invocationOrigin.Receiver;
+                        break;
                     }
                     case MemberExpressionOrigin parentMemberAccess:
                     {
@@ -346,6 +386,27 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                         break;
                     }
                 }
+            }
+
+            // Append current
+            if (currentPropertyChain.Count > 0)
+                includedProperyChains.Add(currentPropertyChain.ToArray());
+
+            // Check for attribute in initial variable assignment (factory)
+            foreach (var includeChain in FindEfCorePropertyIncludedAttributeChains(current, semanticModel, cancellationToken))
+            {
+                var chain = includeChain.Split(['.'], StringSplitOptions.RemoveEmptyEntries);
+                if (chain.Length == 0)
+                    continue;
+                includedProperyChains.Add(chain);
+            }
+
+            // Check if properychain is included
+            foreach (var chain in includedProperyChains)
+            {
+                // Check if one of the attribues garantees the current needed property includes
+                if (chain.Take(propertyChain.Length).SequenceEqual(propertyChain.Reverse(), StringComparer.Ordinal))
+                    return true;
             }
             return false;
         }
@@ -394,6 +455,39 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 }
             }
             return false;
+        }
+        private static IEnumerable<string> FindEfCorePropertyIncludedAttributeChains(
+            ExpressionOrigin? origin,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
+        {
+            IEnumerable<AttributeData> efCoreAttributes = Array.Empty<AttributeData>();
+            // Out parameter of a method 
+            if (origin is SyntaxExpressionOrigin { Syntax.Parent: ArgumentSyntax argument })
+            {
+                var invocation = argument.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+                if (invocation == null)
+                    return [];
+                if (semanticModel.GetSymbolInfo(invocation!, cancellationToken).Symbol is not IMethodSymbol methodSymbol)
+                    return [];
+                var argumentIndex = invocation!.ArgumentList.Arguments.IndexOf(argument);
+                if (argumentIndex < 0)
+                    return [];
+                var parameter = methodSymbol.Parameters[argumentIndex];
+                if (parameter.RefKind != RefKind.Out)
+                    return [];
+                efCoreAttributes = parameter.GetAttributes(AttributeHelper.IsEfCorePropertyIncludedAttribute);
+            }
+            // Return of a marked method
+            else if (origin is SyntaxExpressionOrigin { Syntax.Parent: InvocationExpressionSyntax invocation })
+            {
+                if (semanticModel.GetSymbolInfo(invocation!, cancellationToken).Symbol is not IMethodSymbol methodSymbol)
+                    return [];
+                efCoreAttributes = methodSymbol.GetReturnTypeAttributes(AttributeHelper.IsEfCorePropertyIncludedAttribute);
+            }
+            return efCoreAttributes
+                .ParseConstructorArguments(AttributeHelper.ParseEfCorePropertyIncludedAttribute)
+                .WhereNotNullOrWhiteSpace();
         }
     }
 }

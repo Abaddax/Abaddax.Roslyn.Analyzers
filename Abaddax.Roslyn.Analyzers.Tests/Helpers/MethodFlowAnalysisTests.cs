@@ -1,3 +1,4 @@
+using Abaddax.Roslyn.Analyzers.Attributes;
 using Abaddax.Roslyn.Analyzers.Tests.Common;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -9,6 +10,14 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
 {
     public sealed class MethodFlowAnalysisTests : HelperTestBase
     {
+        protected override IEnumerable<MetadataReference> AdditionalReferences
+        {
+            get
+            {
+                yield return MetadataReference.CreateFromFile(typeof(ForwardedParameterAttribute).Assembly.Location);
+            }
+        }
+
         private TOperation Process<TOperation>(string source,
             out SemanticModel semanticModel)
             where TOperation : class, IOperation
@@ -1123,6 +1132,40 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
                     {
                         var x = new int[10];
                         var y = x.Where(x => [|x|] > 5);
+                    }
+                }
+                """,
+              out var semanticModel);
+
+            var traversed = MethodFlowAnalysis.TraverseAssignments(
+                operation,
+                semanticModel,
+                default);
+
+            Assert.That(traversed, Is.Not.Null);
+            Assert.That(traversed.Syntax.ToFullString(), Is.EqualTo("new int[10]").IgnoreWhiteSpace);
+        }
+        [Test]
+        [Category(nameof(MethodFlowAnalysis.TraverseAssignments))]
+        public void ShouldTraverseAssignmentInsideCustomMarkedLamda()
+        {
+            var operation = Process<IOperation>(
+              """
+                using System;
+                using System.Linq;
+                using System.Collections.Generic;
+                using Abaddax.Roslyn.Analyzers.Attributes;
+
+                public class Test
+                {
+                    public void Func()
+                    {
+                        var x = new int[10];
+                        var y = Custom(x, x => [|x|] > 5);
+                    }
+                    bool Custom(int[] nums, [ForwardedParameterAttribute(nameof(nums), null)] Func<int, bool> selector)
+                    {
+                        return selector(nums[0]);
                     }
                 }
                 """,

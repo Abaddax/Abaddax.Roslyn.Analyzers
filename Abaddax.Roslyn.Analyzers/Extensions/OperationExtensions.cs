@@ -56,7 +56,7 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                 return false;
             return SymbolEqualityComparer.Default.Equals(symbol, targetSymbol);
 
-            static ISymbol? GetTarget(IOperation operation)
+            static ISymbol? GetTarget(IOperation? operation)
             {
                 return operation switch
                 {
@@ -65,6 +65,7 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                     IFieldReferenceOperation fieldRef => fieldRef.Field,
                     IPropertyReferenceOperation propRef => propRef.Property,
                     IParameterReferenceOperation paramRef => paramRef.Parameter,
+                    IDeclarationExpressionOperation declaration => GetTarget(declaration.ChildOperations.ExactlyOneOrDefault()),
                     _ => null
                 };
             }

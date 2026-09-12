@@ -1,6 +1,9 @@
+using Abaddax.Roslyn.Analyzers.Attributes;
 using Abaddax.Roslyn.Analyzers.Supressors;
 using Abaddax.Roslyn.Analyzers.Tests.Common;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 
 namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
@@ -24,41 +27,6 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                 """);
             state.Sources.Add(
                 """
-                namespace Microsoft.EntityFrameworkCore
-                {
-                    public class DbContext;
-                    public class DbSet<TEntity> : IQueryable<TEntity>
-                        where TEntity : class
-                    {
-                        Type IQueryable.ElementType => throw new NotImplementedException();
-                        Expression IQueryable.Expression => throw new NotImplementedException();
-                        IQueryProvider IQueryable.Provider => throw new NotImplementedException();
-                        IEnumerator<TEntity> IEnumerable<TEntity>.GetEnumerator() => throw new NotImplementedException();
-                        IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
-                    }
-                    public static class EntityFrameworkQueryableExtensions
-                    {
-                        #pragma warning disable CS0626
-                        public static extern IIncludableQueryable<TEntity, TProperty> Include<TEntity, TProperty>(
-                            this IQueryable<TEntity> source,
-                            Expression<Func<TEntity, TProperty>> navigationPropertyPath)
-                            where TEntity : class;
-                        public static extern IIncludableQueryable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
-                            this IIncludableQueryable<TEntity, TPreviousProperty> source,
-                            Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath) 
-                            where TEntity : class;
-                        public static extern Task<TSource> FirstAsync<TSource>(
-                            this IQueryable<TSource> source,
-                            CancellationToken cancellationToken = default);
-                    }
-                    namespace Query
-                    {
-                        public interface IIncludableQueryable<out TEntity, out TProperty> : IQueryable<TEntity>;
-                    }
-                }
-                """);
-            state.Sources.Add(
-                """
                 #nullable enable
 
                 namespace TestNamespace
@@ -73,7 +41,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                             public TestEntity Father { get; set; }
                             public List<TestEntity> Childs { get; set; } = new();
                         }
-                        public DbSet<TestEntity> Persons { get; set; } = new();
+                        public DbSet<TestEntity> Persons { get; set; } = null!;
                     }
                 }
                 """);
@@ -86,7 +54,10 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
 
                     [*.cs]
                     dotnet_diagnostic.CS1591.severity = none
+                    dotnet_diagnostic.CS8019.severity = none
                     """));
+            state.AdditionalReferences.Add(MetadataReference.CreateFromFile(typeof(DbContext).Assembly.Location));
+            state.AdditionalReferences.Add(MetadataReference.CreateFromFile(typeof(EfCorePropertyIncludedAttribute).Assembly.Location));
             base.SetupTestState(state);
         }
 
@@ -1042,6 +1013,208 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                     .WithIsSuppressed(true)
                 );
         }
+        [Test]
+        public async Task ShouldSuppressIfFactoryDbSet()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
+                    public class Container
+                    {
+                        public TestContext DB { get; set; } = new();
+                    }
+                    public class Test
+                    {
+                        public Container Create() => new Container();
+                        public void Func()
+                        {
+                            var container = Create();
+
+                            var p = container.DB.Persons
+                                .Include(x => x.Mother)
+                                .First();
+
+                            var m = {|#0:p.Mother|}.ToString();
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true)
+                );
+        }
+        [Test]
+        public async Task ShouldSuppressIfOutFactoryDbSet()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
+                    public class Container
+                    {
+                        public TestContext DB { get; set; } = new();
+                    }
+                    public class Test
+                    {
+                        public void Create(out Container container) => container = new Container();
+                        public void Func()
+                        {
+                            Create(out var container);
+
+                            var p = container.DB.Persons
+                                .Include(x => x.Mother)
+                                .First();
+
+                            var m = {|#0:p.Mother|}.ToString();
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true)
+                );
+        }
+
+        [Test]
+        public async Task ShouldSuppressIfCustomMarkedFactory()
+        {
+            var source =
+                """
+                #nullable enable
+                using Abaddax.Roslyn.Analyzers.Attributes;
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        [return: EfCorePropertyIncluded("Mother")]
+                        public TestContext.TestEntity CreateEntity() => null!;
+                        public void Func()
+                        {
+                            var p = CreateEntity();
+
+                            var m = {|#0:p.Mother|}.ToString();
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true)
+                );
+        }
+        [Test]
+        public async Task ShouldSuppressIfCustomMarkedOutFactory()
+        {
+            var source =
+                """
+                #nullable enable
+                using Abaddax.Roslyn.Analyzers.Attributes;
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void CreateEntity([EfCorePropertyIncluded("Mother")] out TestContext.TestEntity entity) => entity = null!;
+                        public void Func()
+                        {
+                            CreateEntity(out var p);
+
+                            var m = {|#0:p.Mother|}.ToString();
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true)
+                );
+        }
+        [Test]
+        public async Task ShouldNotSuppressIfCustomMarkedRefFactory()
+        {
+            var source =
+                """
+                #nullable enable
+                using Abaddax.Roslyn.Analyzers.Attributes;
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void CreateEntity([EfCorePropertyIncluded("Mother")] ref TestContext.TestEntity entity) => entity = null!;
+                        public void Func()
+                        {
+                            TestContext.TestEntity p = new();
+                            CreateEntity(ref p);
+
+                            var m = {|#0:p.Mother|}.ToString();
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(false)
+                );
+        }
+        [Test]
+        public async Task ShouldSuppressIfCustomMarkedQueryExtension()
+        {
+            var source =
+                """
+                #nullable enable
+                using Abaddax.Roslyn.Analyzers.Attributes;
+
+                namespace TestNamespace
+                {
+                    public static class Extensions
+                    {
+                        [return: EfCorePropertyIncluded("Mother")]
+                        public static IQueryable<TestContext.TestEntity> IncludeMother(this IQueryable<TestContext.TestEntity> source)
+                        {
+                            return source;
+                        }
+                    }
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var db = new TestContext();
+                
+                            var p = db.Persons
+                                .Include(x => x.Father)
+                                .IncludeMother()
+                                .First();
+
+                            var m = {|#0:p.Mother|}.ToString();
+                            var f = {|#1:p.Father|}.ToString();
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(true)
+                );
+        }
+
 
     }
 }

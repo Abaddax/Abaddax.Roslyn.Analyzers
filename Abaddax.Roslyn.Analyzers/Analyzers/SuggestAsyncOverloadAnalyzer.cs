@@ -79,7 +79,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 // Do not suggest original method! Otherwise this could unintentianally cause a stack overflow 
                 .Where(candidate => !SymbolEqualityComparer.Default.Equals(candidate, callerMethod))
                 // Do not suggest obsolete methods
-                .Where(candidate => !candidate.GetAttributes().Any(attr => attr.AttributeClass?.HasName("ObsoleteAttribute", "System") ?? false))
+                .Where(candidate => !candidate.GetAttributes("ObsoleteAttribute", "System").Any())
                 // Validate compatible return
                 .Where(candidate => candidate.IsAsyncCompatibleReturnType())
                 .Where(candidate => HasCompatibleReturnType(candidate, method, semanticModel, position))
@@ -132,8 +132,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                             .Select((x, i) => (x.Type, Index: i))
                             .Where(x => SymbolEqualityComparer.Default.Equals(x.Type, typeArgument))
                             .Select(x => method.Parameters.ElementAtOrDefault(x.Index)?.Type)
-                            .Where(x => x != null)
-                            .Select(x => x!)
+                            .WhereNotNull()
                             .ToList();
                         if (SymbolEqualityComparer.Default.Equals(alternative.ReturnType, typeArgument))
                             candidateTypes.Add(method.ReturnType);
@@ -144,8 +143,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                     }
                     return TypeCompatibilityHelper.ConstructGenericMethod(alternative.OriginalDefinition, genericArguments, genericArguments.Select(x => x.NullableAnnotation).ToImmutableArray(), semanticModel);
                 })
-                .Where(alternative => alternative != null)
-                .Select(alternative => alternative!);
+                .WhereNotNull();
         }
         private static bool HasCompatibleReturnType(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod, SemanticModel semanticModel, int position)
         {

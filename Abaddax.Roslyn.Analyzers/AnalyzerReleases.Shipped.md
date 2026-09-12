@@ -9,5 +9,6 @@ ABX0002 | AsyncUsage  |   Info   | AsyncSuffixAnalyzer
 ABX0003 | AsyncUsage  |   Info   | SuggestAsyncOverloadAnalyzer
 ABX0004 | AsyncUsage  | Warning  | EfCorePreferAsyncCallAnalyzer
 ABX0005 |   Style     |   Info   | EfCoreExplicitTrackingAnalyzer
-ABX0006 | Reliability |  Error   | UncoditionalSelfRecursionAnalyzer 
+ABX0006 | Reliability |  Error   | UncoditionalSelfRecursionAnalyzer
+ABX0007 |   Style     |   Info   | EfCoreThenIncludeFormattingAnalyzer
 

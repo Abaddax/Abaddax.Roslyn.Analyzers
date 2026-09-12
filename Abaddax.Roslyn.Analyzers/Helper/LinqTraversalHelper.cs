@@ -25,6 +25,17 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             // Get generic method definition
             linqMethod = linqMethod.OriginalDefinition;
 
+            // Check for [ForwardedParameterAttribute] for custom LINQ style methods
+            if (linqParameter.GetAttributes(AttributeHelper.IsForwardedParameterAttribute)
+                .FirstOrDefault() is AttributeData forwarededParameterAttribute)
+            {
+                return GetForwardedParameterAttributeParameter(
+                    forwarededParameterAttribute,
+                    linqMethodInvocation,
+                    lambdaParameterIndex);
+            }
+
+            // Check LINQ
             if (linqMethod.ContainingType.HasName("Enumerable", "System.Linq"))
             {
                 return GetEnumerableForwardedParameter(
@@ -34,6 +45,21 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     lambdaParameterIndex);
             }
             return null;
+        }
+
+        private static IOperation? GetForwardedParameterAttributeParameter(
+            AttributeData forwarededParameterAttribute,
+            IInvocationOperation linqMethodInvocation,
+            int lambdaParameterIndex)
+        {
+            var forwardedParameterNames = forwarededParameterAttribute.ParseConstructorArguments(AttributeHelper.ParseForwardedParameterAttribute);
+            var forwardedParameterName = forwardedParameterNames.ElementAtOrDefault(lambdaParameterIndex);
+            if (string.IsNullOrEmpty(forwardedParameterName))
+                return null;
+            var forwardedArgument = linqMethodInvocation.Arguments.FirstOrDefault(x => x.Parameter?.Name == forwardedParameterName);
+            if (forwardedArgument == null)
+                return null;
+            return forwardedArgument.Value;
         }
 
         private static IOperation? GetEnumerableForwardedParameter(

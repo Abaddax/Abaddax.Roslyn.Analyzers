@@ -71,8 +71,13 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 return false;
             if (method.DeclaredAccessibility != Accessibility.Public)
                 return false;
-            if (method.GetAttributes().Any(attr => attr.AttributeClass?.HasName("NonActionAttribute", "System.Web.Mvc") ?? false))
+            if (method.GetAttributes(attr =>
+                attr.HasName("NonActionAttribute", "System.Web.Mvc") ||
+                attr.HasName("NonActionAttribute", "Microsoft.AspNetCore.Mvc"))
+                .Any())
+            {
                 return false;
+            }
             return true;
         }
         private static bool IsTestingMethod(IMethodSymbol method, AnalyzerConfigOptions options)

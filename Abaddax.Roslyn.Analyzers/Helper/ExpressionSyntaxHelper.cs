@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Diagnostics;
+using static Abaddax.Roslyn.Analyzers.Helper.MethodFlowAnalysis;
 
 namespace Abaddax.Roslyn.Analyzers.Helper
 {
@@ -87,7 +88,8 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         public static ExpressionSyntax TraverseAssignments(
             ExpressionSyntax expression,
             SemanticModel semanticModel,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            TraverseCallback? onTraverseCallback = null)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -99,22 +101,24 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (operation == null)
                 return expression;
 
-            var lastAssignment = MethodFlowAnalysis.TraverseAssignments(operation, semanticModel, cancellationToken);
+            var lastAssignment = MethodFlowAnalysis.TraverseAssignments(operation, semanticModel, cancellationToken,
+                onTraverseCallback: onTraverseCallback);
             if (lastAssignment == null || expression == lastAssignment.Syntax)
                 return expression;
 
             var lastAssignmentExpression = lastAssignment.Syntax switch
             {
                 // Special case for foreach(var x in y) -> forward to y
-                IdentifierNameSyntax identifier
-                    when identifier.Parent is ForEachStatementSyntax foreachLoop
+                IdentifierNameSyntax identifier when
+                    identifier.Parent is ForEachStatementSyntax foreachLoop
                     => foreachLoop.Expression,
                 _ => lastAssignment.Syntax as ExpressionSyntax
             };
             if (lastAssignmentExpression == null)
                 return expression;
 
-            return TraverseAssignments(lastAssignmentExpression, semanticModel, cancellationToken);
+            return TraverseAssignments(lastAssignmentExpression, semanticModel, cancellationToken,
+                onTraverseCallback: onTraverseCallback);
         }
 
         /// <summary>
@@ -125,12 +129,14 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         public static ExpressionOrigin? TryExpand(
             ExpressionSyntax expression,
             SemanticModel semanticModel,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            TraverseCallback? onTraverseCallback = null)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             //Unwrap forwarded variable assignements. var x = Func(); var y = x -> y = Func()
-            expression = TraverseAssignments(expression, semanticModel, cancellationToken)
+            expression = TraverseAssignments(expression, semanticModel, cancellationToken,
+                onTraverseCallback: onTraverseCallback)
                 .IgnoreCasts()
                 .IgnoreNullSuppression();
 
@@ -139,14 +145,11 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 //Unwrap nested property access
                 case MemberAccessExpressionSyntax memberAccess:
                 {
-                    var receiver = TryExpand(
-                        memberAccess.Expression,
-                        semanticModel,
-                        cancellationToken);
+                    var receiver = TryExpand(memberAccess.Expression, semanticModel, cancellationToken,
+                        onTraverseCallback: onTraverseCallback);
                     if (receiver == null)
                         return null;
-                    var member = semanticModel.GetSymbolInfo(memberAccess, cancellationToken)
-                       .Symbol;
+                    var member = semanticModel.GetSymbolInfo(memberAccess, cancellationToken).Symbol;
                     if (member == null)
                         return null;
                     return new MemberExpressionOrigin(receiver, member);
@@ -154,19 +157,15 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 //Unwrap nested property access via indexer
                 case ElementAccessExpressionSyntax elementAccess:
                 {
-                    var receiver = TryExpand(
-                         elementAccess.Expression,
-                         semanticModel,
-                         cancellationToken);
+                    var receiver = TryExpand(elementAccess.Expression, semanticModel, cancellationToken,
+                         onTraverseCallback: onTraverseCallback);
                     return receiver;
                 }
                 //Unwrap awaits
                 case AwaitExpressionSyntax asyncAccess:
                 {
-                    var receiver = TryExpand(
-                       asyncAccess.Expression,
-                       semanticModel,
-                       cancellationToken);
+                    var receiver = TryExpand(asyncAccess.Expression, semanticModel, cancellationToken,
+                        onTraverseCallback: onTraverseCallback);
                     if (receiver == null)
                         return null;
                     return new AsyncSyntaxExpressionOrigin(receiver);
@@ -174,10 +173,8 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 //Unwrap invocations
                 case InvocationExpressionSyntax invocation:
                 {
-                    var receiver = TryExpand(
-                        invocation.Expression,
-                        semanticModel,
-                        cancellationToken);
+                    var receiver = TryExpand(invocation.Expression, semanticModel, cancellationToken,
+                        onTraverseCallback: onTraverseCallback);
                     if (receiver == null)
                         return new SyntaxExpressionOrigin(expression);
                     return new InvocationSyntaxExpressionOrigin(receiver, invocation);

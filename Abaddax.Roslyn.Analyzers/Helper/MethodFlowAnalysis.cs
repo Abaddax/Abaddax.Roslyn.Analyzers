@@ -10,6 +10,12 @@ namespace Abaddax.Roslyn.Analyzers.Helper
     {
         private const int _MaxCallStackDepth = 10;
 
+        /// <summary>
+        /// Check if the traversal should be continued or aborted
+        /// </summary>
+        /// <returns><see langword="true"/> if the traversal should be continued, <see langword="false"/> to abort traversal</returns>
+        public delegate bool TraverseCallback(IOperation currentOperation);
+
         public static IEnumerable<IOperation> GetPossibleReturnValues(
             IInvocationOperation invocation,
             SemanticModel semanticModel,
@@ -63,7 +69,8 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         public static IOperation TraverseAssignments(
             IOperation operation,
             SemanticModel semanticModel,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            TraverseCallback? onTraverseCallback = null)
         {
             var callStack = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
             var callStackInfo = new Stack<TraversalStackInfo>();
@@ -75,6 +82,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 callStack: callStack,
                 callStackInfo: callStackInfo,
                 maxCallStackDepth: _MaxCallStackDepth,
+                onTraverseCallback: onTraverseCallback,
                 cancellationToken);
         }
 
@@ -473,7 +481,6 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                                         return (x.Operation, (null, null));
                                     }
                                 }
-
                                 // Also check for local functions, as they might also alter the target without explicit assignments
                                 if (x.Operation is IInvocationOperation invocation &&
                                     invocation.TargetMethod.MethodKind is MethodKind.LocalFunction or MethodKind.LambdaMethod or MethodKind.DelegateInvoke)
@@ -543,6 +550,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             HashSet<IMethodSymbol> callStack,
             Stack<TraversalStackInfo> callStackInfo,
             ushort maxCallStackDepth,
+            TraverseCallback? onTraverseCallback,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -561,7 +569,11 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 callStackInfo.Pop();
             }
 
-            // 2. Step into invocations
+            // 2. Check for abort condition
+            if (onTraverseCallback != null && !onTraverseCallback.Invoke(operation))
+                return operation;
+
+            // 3. Step into invocations
             if (operation is IInvocationOperation invocation)
             {
                 // 1. We can only analyze methods where we have the source code.
@@ -607,7 +619,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 }
 
                 // 7. Traverse function call with all the currently known parameters
-                return TraverseAssignmentsInternal(lastAssignment, semanticModel, cfg, outerArguments, callStack, callStackInfo, maxCallStackDepth, cancellationToken);
+                return TraverseAssignmentsInternal(lastAssignment, semanticModel, cfg, outerArguments, callStack, callStackInfo, maxCallStackDepth, onTraverseCallback, cancellationToken);
             }
             else if (operation.Parent is IArgumentOperation argument &&
                 argument.Parameter?.RefKind is RefKind.Out or RefKind.Ref &&
@@ -656,7 +668,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 }
 
                 // 7. Traverse function call with all the currently known parameters
-                return TraverseAssignmentsInternal(lastAssignment, semanticModel, cfg, outerArguments, callStack, callStackInfo, maxCallStackDepth, cancellationToken);
+                return TraverseAssignmentsInternal(lastAssignment, semanticModel, cfg, outerArguments, callStack, callStackInfo, maxCallStackDepth, onTraverseCallback, cancellationToken);
             }
             else
             {
@@ -702,7 +714,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
 
                     lastAssignment = possibleCallingOperation.CallerParamRef;
                 }
-                return TraverseAssignmentsInternal(lastAssignment, semanticModel, cfg, outerArguments, callStack, callStackInfo, maxCallStackDepth, cancellationToken);
+                return TraverseAssignmentsInternal(lastAssignment, semanticModel, cfg, outerArguments, callStack, callStackInfo, maxCallStackDepth, onTraverseCallback, cancellationToken);
             }
         }
 
