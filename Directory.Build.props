@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <Version>0.0.1-preview8</Version>
     <Description>A collection of C# Roslyn analyzers</Description>
     <Authors>Abaddax</Authors> 
     <RepositoryUrl>https://github.com/Abaddax/Abaddax.Roslyn.Analyzers.git</RepositoryUrl>

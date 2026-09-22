@@ -30,6 +30,8 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
         }
         public static IEnumerable<AttributeData> GetAttributes(this ISymbol symbol, Func<AttributeData, bool> predicate)
         {
+            if (symbol is IMethodSymbol methodSymbol && methodSymbol.ReducedFrom != null)
+                symbol = methodSymbol.ReducedFrom;
             return symbol.GetAttributes()
                 .Where(predicate);
         }

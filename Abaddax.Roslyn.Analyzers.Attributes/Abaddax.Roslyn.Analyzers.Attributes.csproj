@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
+    <PackageId>Abaddax.Roslyn.Analyzers.Attributes</PackageId>
+    <PackageTags>Abaddax.Roslyn.Analyzers, analyzers</PackageTags>
   </PropertyGroup>
     
   <ItemGroup>

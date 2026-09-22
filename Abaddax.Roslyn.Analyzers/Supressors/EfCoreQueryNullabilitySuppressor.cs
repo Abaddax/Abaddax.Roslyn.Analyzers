@@ -61,7 +61,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
 
             if (IsInsideQuery(invocation, semanticModel, context.CancellationToken, out var queryInvocation))
             {
-                if (IsCalledFromDbContext(queryInvocation, semanticModel, context.CancellationToken))
+                if (IsCalledFromDbContext(queryInvocation, semanticModel, options, context.CancellationToken))
                 {
                     if (IsQueryDelegateParameter(queryInvocation, expression, semanticModel, context.CancellationToken))
                     {
@@ -122,8 +122,13 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
         private static bool IsCalledFromDbContext(
           InvocationExpressionSyntax queryInvocation,
           SemanticModel semanticModel,
+          AnalyzerConfigOptions options,
           CancellationToken cancellationToken)
         {
+            // Skip check if option is set
+            if (options.IsSet(AnalyzerIdentifiers.EfCoreQueryNullReferenceSuppression, "assume_all_queries_are_efcore_queries"))
+                return true;
+
             // Expand the caller chain and check if the query originates from a DbContext.DbSet<T>
             var origin = ExpressionSyntaxHelper.TryExpand(queryInvocation, semanticModel, cancellationToken);
             bool dbSetFound = false;

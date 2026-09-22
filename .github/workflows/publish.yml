@@ -4,13 +4,13 @@ on:
   push:
     branches: [ "master" ]
     paths:
-      - "**/*.csproj"
+      - "**/*.props"
 
 jobs:
   check_version:    
     uses: Abaddax/workflows/.github/workflows/dotnet.check_version.yml@master
     with:
-      CSPROJ_PATH: Abaddax.Roslyn.Analyzers.Package/Abaddax.Roslyn.Analyzers.Package.csproj
+      CSPROJ_PATH: Directory.Build.props
       
   ci:    
     needs: [check_version]

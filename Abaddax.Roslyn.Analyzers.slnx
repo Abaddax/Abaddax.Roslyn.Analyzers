@@ -2,6 +2,11 @@
   <Folder Name="/Solution items/">
     <File Path="Directory.Build.props" />
   </Folder>
+  <Folder Name="/Solution items/workflows/">
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/publish.nuget.yml" />
+    <File Path=".github/workflows/publish.yml" />
+  </Folder>
   <Project Path="Abaddax.Roslyn.Analyzers.Attributes/Abaddax.Roslyn.Analyzers.Attributes.csproj" Id="0fd13ba2-8496-4d0a-bf8c-92769e5a43b1" />
   <Project Path="Abaddax.Roslyn.Analyzers.CodeFixes/Abaddax.Roslyn.Analyzers.CodeFixes.csproj" />
   <Project Path="Abaddax.Roslyn.Analyzers.Package/Abaddax.Roslyn.Analyzers.Package.csproj" />
