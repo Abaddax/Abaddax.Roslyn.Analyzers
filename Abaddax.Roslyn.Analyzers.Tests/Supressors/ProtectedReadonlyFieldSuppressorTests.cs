@@ -6,15 +6,15 @@ using NUnit.Framework;
 
 namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
 {
-    public sealed class UnusedCancallationTokenParameterSuppressorTests
-        : SuppressorTestBase<UnusedCancallationTokenParameterSuppressor>
+    public sealed class ProtectedReadonlyFieldSuppressorTests
+        : SuppressorTestBase<ProtectedReadonlyFieldSuppressor>
     {
         protected override IEnumerable<DiagnosticAnalyzer> AdditionalAnalyzers
         {
             get
             {
-                // Create IDE0060 analyzer
-                var type = Type.GetType("Microsoft.CodeAnalysis.CSharp.RemoveUnusedParametersAndValues.CSharpRemoveUnusedParametersAndValuesDiagnosticAnalyzer, Microsoft.CodeAnalysis.CSharp.Features",
+                // Create CA1051 analyzer
+                var type = Type.GetType("Microsoft.CodeQuality.Analyzers.ApiDesignGuidelines.DoNotDeclareVisibleInstanceFieldsAnalyzer, Microsoft.CodeAnalysis.NetAnalyzers",
                     throwOnError: true)!;
                 var analyzer = (DiagnosticAnalyzer)Activator.CreateInstance(type)!;
                 yield return analyzer;
@@ -27,20 +27,19 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                     root = true
 
                     [*.cs]
-                    dotnet_diagnostic.IDE0060.severity = warning
-                    dotnet_code_quality_unused_parameters = all:warning
+                    dotnet_code_quality.{AnalyzerIdentifiers.ProtectedReadonlyFieldSuppression}.enabled = true
+
+                    [*.cs]
+                    dotnet_diagnostic.CA1051.severity = warning
                     """));
             base.SetupTestState(state);
         }
 
         [Test]
-        public async Task ShouldSuppressIfInsideAsyncFunction()
+        public async Task ShouldSuppressIfProtectedReadonlyField()
         {
             var source =
                 """
-                using System.Threading;
-                using System.Threading.Tasks;
-
                 #pragma warning disable CS1591
                 #pragma warning disable CS1998
 
@@ -48,26 +47,21 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                 {
                     public class Test
                     {
-                        public async Task FuncAsync(CancellationToken {|#0:cancallationToken|})
-                        {
-                            return;
-                        }
+                        protected readonly int {|#0:_field|} = 1;
                     }
                 }
                 """;
             await VerifySuppressorAsync(source,
-                DiagnosticResult.CompilerWarning("IDE0060")
+                DiagnosticResult.CompilerWarning("CA1051")
                     .WithLocation(0)
                     .WithIsSuppressed(true)
                 );
         }
         [Test]
-        public async Task ShouldNotSuppressIfInsideSyncFunction()
+        public async Task ShouldNotSuppressIfProtectedField()
         {
             var source =
                 """
-                using System.Threading;
-
                 #pragma warning disable CS1591
                 #pragma warning disable CS1998
 
@@ -75,19 +69,15 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                 {
                     public class Test
                     {
-                        public void Func(CancellationToken {|#0:cancallationToken|})
-                        {
-                            return;
-                        }
+                        protected int {|#0:_field|} = 1;
                     }
                 }
                 """;
             await VerifySuppressorAsync(source,
-                DiagnosticResult.CompilerWarning("IDE0060")
+                DiagnosticResult.CompilerWarning("CA1051")
                     .WithLocation(0)
                     .WithIsSuppressed(false)
                 );
         }
-
     }
 }

@@ -36,8 +36,13 @@
 
   <!-- Direct analyzer references for suppressor tests -->
   <ItemGroup>
-    <!--Microsoft.CodeAnalysis.CSharp.Features (IDExxxx-Analyzers) -->
+    <!-- Microsoft.CodeAnalysis.CSharp.Features (IDExxxx-Analyzers) -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Features" Version="4.14.0" />
+    <!-- Microsoft.CodeAnalysis.NetAnalyzers (CAxxxx-Analyzers) -->
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0">
+      <GeneratePathProperty>true</GeneratePathProperty>
+    </PackageReference>
+    <Reference Include="$(PkgMicrosoft_CodeAnalysis_NetAnalyzers)\analyzers\dotnet\cs\*.dll" />
   </ItemGroup>
 
   <ItemGroup>

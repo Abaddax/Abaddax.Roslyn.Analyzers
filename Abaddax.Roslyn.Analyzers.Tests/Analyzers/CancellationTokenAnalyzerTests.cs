@@ -123,6 +123,74 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
 
             await VerifyAnalyzerAsync(source, OutputKind.ConsoleApplication);
         }
+        [Test]
+        public async Task ShouldNotReportIfOverriddenFunction()
+        {
+            var source =
+                """
+                namespace TestNamespace
+                {
+                    public abstract class TestBase
+                    {
+                        public abstract Task {|#0:Func|}();
+                    }
+                    public class Test : TestBase
+                    {
+                        public override Task Func()
+                        {
+                            return Task.CompletedTask;
+                        }
+                    }
+                }
+                """;
+
+            await VerifyAnalyzerAsync(source,
+               new DiagnosticResult(AnalyzerIdentifiers.AddCancellationTokenAnalyzer, DiagnosticSeverity.Warning)
+                   .WithLocation(0)
+               );
+        }
+        [Test]
+        public async Task ShouldNotReportIfInterfaceImplementation()
+        {
+            var source =
+                """
+                using System;
+
+                namespace TestNamespace
+                {
+                    public class Test : IAsyncDisposable
+                    {
+                        public ValueTask DisposeAsync()
+                        {
+                            return ValueTask.CompletedTask;
+                        }
+                    }
+                }
+                """;
+
+            await VerifyAnalyzerAsync(source);
+        }
+        [Test]
+        public async Task ShouldReportIfInterfaceDeclaration()
+        {
+            var source =
+                """
+                using System;
+
+                namespace TestNamespace
+                {
+                    public interface ITestDispose
+                    {
+                       ValueTask {|#0:DisposeAsync|}();
+                    }
+                }
+                """;
+
+            await VerifyAnalyzerAsync(source,
+                new DiagnosticResult(AnalyzerIdentifiers.AddCancellationTokenAnalyzer, DiagnosticSeverity.Warning)
+                    .WithLocation(0)
+                );
+        }
 
 
     }

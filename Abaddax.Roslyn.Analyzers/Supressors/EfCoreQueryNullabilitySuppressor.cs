@@ -12,7 +12,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class EfCoreQueryNullabilitySuppressor : DiagnosticSuppressor
     {
-        private static readonly SuppressionDescriptor[] _NullDereferences = new string[]
+        private static readonly SuppressionDescriptor[] _Suppressions = new string[]
             {
                 "CS8602", // Dereference of a possibly null reference.
                 "CS8604", // Possible null reference argument.
@@ -25,7 +25,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             .ToArray();
 
         public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions { get; }
-            = ImmutableArray.CreateRange(_NullDereferences);
+            = ImmutableArray.CreateRange(_Suppressions);
 
         public override void ReportSuppressions(SuppressionAnalysisContext context)
         {

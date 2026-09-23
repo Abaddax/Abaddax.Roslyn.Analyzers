@@ -13,7 +13,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class EfCoreMaybeNullNavigationSuppressor : DiagnosticSuppressor
     {
-        private static readonly SuppressionDescriptor[] _NullDereferences = new string[]
+        private static readonly SuppressionDescriptor[] _Suppressions = new string[]
             {
                 "CS8600", // Converting null literal or possible null value to non-nullable type.
                 "CS8601", // Possible null reference assignment.
@@ -31,7 +31,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             .ToArray();
 
         public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions { get; }
-            = ImmutableArray.CreateRange(_NullDereferences);
+            = ImmutableArray.CreateRange(_Suppressions);
 
         public override void ReportSuppressions(SuppressionAnalysisContext context)
         {

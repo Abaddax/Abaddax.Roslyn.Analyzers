@@ -9,7 +9,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class UnusedExceptionAssignmentSuppressor : DiagnosticSuppressor
     {
-        private static readonly SuppressionDescriptor[] _VariableAssignments = new string[]
+        private static readonly SuppressionDescriptor[] _Suppressions = new string[]
             {
                 "CS0168",  // The variable 'var' is declared but never used.
                 "IDE0059", // Remove unnecessary value assignment.
@@ -20,7 +20,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             .ToArray();
 
         public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions { get; }
-            = ImmutableArray.CreateRange(_VariableAssignments);
+            = ImmutableArray.CreateRange(_Suppressions);
 
         public override void ReportSuppressions(SuppressionAnalysisContext context)
         {

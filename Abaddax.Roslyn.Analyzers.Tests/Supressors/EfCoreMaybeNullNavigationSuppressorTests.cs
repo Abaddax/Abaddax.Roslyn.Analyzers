@@ -502,6 +502,36 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                 );
         }
         [Test]
+        public async Task ShouldSuppressIfIncludedInEnumerableLinq()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var db = new TestContext();
+                            var p = db.Persons
+                                .Include(x => x.Mother)
+                                .ToArray();
+                            var y = p.Select(x => {|#0:x.Mother|}.ToString());
+                        }
+                    }
+                }
+                """;
+
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true)
+                );
+        }
+
+        [Test]
         public async Task ShouldNotSuppressIfIncludedInEnumerableSelectProjection()
         {
             var source =

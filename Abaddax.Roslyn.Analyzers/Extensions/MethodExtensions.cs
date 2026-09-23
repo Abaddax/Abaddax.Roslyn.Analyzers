@@ -50,6 +50,12 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                 return false;
             }
 
+            // Do not warn about interface implementations
+            if (method.IsInterfaceImplementation())
+            {
+                return false;
+            }
+
             return true;
         }
         /// <summary>
@@ -90,6 +96,24 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                    // XUnit
                    attr.HasName("FactAttribute", "Xunit"))
                 .Any();
+        }
+
+        public static bool IsInterfaceImplementation(this IMethodSymbol method)
+        {
+            var containingType = method.ContainingType;
+            foreach (var interfaceType in containingType.AllInterfaces)
+            {
+                foreach (var candidate in interfaceType.GetMembers()
+                    .OfType<IMethodSymbol>())
+                {
+                    var implementation = containingType.FindImplementationForInterfaceMember(candidate);
+                    if (implementation == null)
+                        continue;
+                    if (SymbolEqualityComparer.Default.Equals(implementation, method))
+                        return true;
+                }
+            }
+            return false;
         }
 
         public static IEnumerable<IMethodSymbol> ListPotentialAlternatives(ITypeSymbol receiverType, string targetName, SemanticModel semanticModel, int position)

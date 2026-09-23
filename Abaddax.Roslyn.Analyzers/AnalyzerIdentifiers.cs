@@ -20,6 +20,7 @@ namespace Abaddax.Roslyn.Analyzers
         public const string EfCoreQueryNullReferenceSuppression = "ABX1002";
         public const string UnusedExceptionAssignmentSuppression = "ABX1003";
         public const string UnusedCancallationTokenParameterSuppression = "ABX1004";
+        public const string ProtectedReadonlyFieldSuppression = "ABX1005";
 
         #endregion
     }

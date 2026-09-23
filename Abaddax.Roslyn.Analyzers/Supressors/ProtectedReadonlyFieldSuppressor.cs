@@ -8,15 +8,15 @@ using System.Collections.Immutable;
 namespace Abaddax.Roslyn.Analyzers.Supressors
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public sealed class UnusedCancallationTokenParameterSuppressor : DiagnosticSuppressor
+    public sealed class ProtectedReadonlyFieldSuppressor : DiagnosticSuppressor
     {
         private static readonly SuppressionDescriptor[] _Suppressions = new string[]
             {
-                "IDE0060", // Remove unused parameter.
+                "CA1051", // Do not declare visible instance fields.
             }.Select(x => new SuppressionDescriptor(
-                id: AnalyzerIdentifiers.UnusedCancallationTokenParameterSuppression,
+                id: AnalyzerIdentifiers.ProtectedReadonlyFieldSuppression,
                 suppressedDiagnosticId: x,
-                justification: "This is an exception variable inside a catch block. The warning is irellevant in this case."))
+                justification: "Declaring protected readonly fields is fine in some cases."))
             .ToArray();
 
         public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions { get; }
@@ -40,37 +40,24 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 return;
 
             var options = context.Options.GetGlobalOptions(tree);
-            if (!options.IsEnabled(AnalyzerIdentifiers.UnusedCancallationTokenParameterSuppression, defaultValue: true))
+            if (!options.IsEnabled(AnalyzerIdentifiers.ProtectedReadonlyFieldSuppression, defaultValue: false))
                 return;
 
             var root = tree.GetRoot(context.CancellationToken);
             var node = root.FindNode(diagnostic.Location.SourceSpan);
 
-            if (node is not ParameterSyntax { Parent: ParameterListSyntax { Parent: MethodDeclarationSyntax methodDecl } } parameterDecl)
+            if (node is not VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax { Parent: FieldDeclarationSyntax fieldDecl } })
                 return;
 
-            var semanticModel = context.GetSemanticModel(tree);
-
-            var parameter = semanticModel.GetDeclaredSymbol(parameterDecl, context.CancellationToken);
-            if (parameter == null)
-                return;
-
-            // Only for parameters of type CancellationToken
-            if (!parameter.Type.HasName("CancellationToken", "System.Threading"))
-                return;
-
-            var method = semanticModel.GetDeclaredSymbol(methodDecl, context.CancellationToken);
-            if (method == null)
-                return;
-
-            // Skip that are not async methods
-            if (!method.IsTaskedMethodDeclaration())
-                return;
-
-            var descriptor = SupportedSuppressions
-                .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
-            context.ReportSuppression(
-                Suppression.Create(descriptor, diagnostic));
+            if (fieldDecl.Modifiers.Any(x => x.IsKind(SyntaxKind.ProtectedKeyword)) &&
+                fieldDecl.Modifiers.Any(x => x.IsKind(SyntaxKind.ReadOnlyKeyword)))
+            {
+                // Condition met! Suppress the warning.
+                var descriptor = SupportedSuppressions
+                    .First(x => x.SuppressedDiagnosticId == diagnostic.Id);
+                context.ReportSuppression(
+                    Suppression.Create(descriptor, diagnostic));
+            }
         }
     }
 }
