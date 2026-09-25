@@ -11,6 +11,7 @@ namespace Abaddax.Roslyn.Analyzers
         public const string EfCoreExplicitTrackingAnalyzer = "ABX0005";
         public const string UncoditionalSelfRecursionAnalyzer = "ABX0006";
         public const string EfCoreThenIncludeFormattingAnalyzer = "ABX0007";
+        public const string SuppressionJustificationAnalyzer = "ABX0008";
 
         #endregion
 
