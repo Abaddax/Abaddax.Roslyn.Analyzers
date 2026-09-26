@@ -1,3 +1,5 @@
+[![CI](https://github.com/Abaddax/Abaddax.Roslyn.Analyzers/actions/workflows/ci.yml/badge.svg)](https://github.com/Abaddax/Abaddax.Roslyn.Analyzers/actions/workflows/ci.yml)
+
 # Abaddax.Roslyn.Analyzers
 
 **Abaddax.Roslyn.Analyzers** is a collection of C# Roslyn analyzer that uses static analysis to detect undesired code patterns.
