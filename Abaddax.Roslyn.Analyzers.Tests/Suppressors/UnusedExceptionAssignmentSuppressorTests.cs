@@ -1,9 +1,9 @@
-using Abaddax.Roslyn.Analyzers.Supressors;
+using Abaddax.Roslyn.Analyzers.Suppressors;
 using Abaddax.Roslyn.Analyzers.Tests.Common;
 using Microsoft.CodeAnalysis.Testing;
 using NUnit.Framework;
 
-namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
+namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
 {
     public sealed class UnusedExceptionAssignmentSuppressorTests
         : SuppressorTestBase<UnusedExceptionAssignmentSuppressor>

@@ -9,7 +9,7 @@ namespace Abaddax.Roslyn.Analyzers.Attributes
         public IReadOnlyList<string?> ForwardedParameterNames { get; }
 
         /// <summary>
-        /// Delares the lambda to forward the given <paramref name="forwardedParameterNames"/>.
+        /// Declares the lambda to forward the given <paramref name="forwardedParameterNames"/>.
         /// </summary>
         /// <remarks>Types and parameter count must match the lambda parameters</remarks>
         /// <param name="forwardedParameterNames"><see langword="nameof"/> the caller parameter name. <see langword="null"/> if not forwarded</param>

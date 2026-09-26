@@ -3,8 +3,9 @@
   <!-- Make options visable to analyzers -->
   <ItemGroup>
     <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX0001IgnoreTests" />
-    <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX0002IgnoreControllers" />
     <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX0002IgnoreTests" />
+    <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX0002IgnoreControllers" />
+    <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX0008IncludePragmas" />
     <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX1001Enabled" />
     <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX1002Enabled" />
     <CompilerVisibleProperty Include="AbaddaxRoslynAnalyzersABX1003Enabled" />

@@ -82,9 +82,9 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         #endregion
 
         /// <summary>
-        /// Tries to unwrap forward variable declarations and assignments back to the last conclusiv assignment
+        /// Tries to unwrap forward variable declarations and assignments back to the last conclusive assignment
         /// </summary>
-        /// <returns>Last conclusiv assignment or <paramref name="expression"/></returns>
+        /// <returns>Last conclusive assignment or <paramref name="expression"/></returns>
         public static ExpressionSyntax TraverseAssignments(
             ExpressionSyntax expression,
             SemanticModel semanticModel,
@@ -134,7 +134,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Unwrap forwarded variable assignements. var x = Func(); var y = x -> y = Func()
+            // Unwrap forwarded variable assignments. var x = Func(); var y = x -> y = Func()
             expression = TraverseAssignments(expression, semanticModel, cancellationToken,
                 onTraverseCallback: onTraverseCallback)
                 .IgnoreCasts()

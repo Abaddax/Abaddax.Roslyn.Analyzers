@@ -1,20 +1,20 @@
-using Abaddax.Roslyn.Analyzers.Supressors;
+using Abaddax.Roslyn.Analyzers.Suppressors;
 using Abaddax.Roslyn.Analyzers.Tests.Common;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 using NUnit.Framework;
 
-namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
+namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
 {
-    public sealed class ProtectedReadonlyFieldSuppressorTests
-        : SuppressorTestBase<ProtectedReadonlyFieldSuppressor>
+    public sealed class UnusedCancellationTokenParameterSuppressorTests
+        : SuppressorTestBase<UnusedCancellationTokenParameterSuppressor>
     {
         protected override IEnumerable<DiagnosticAnalyzer> AdditionalAnalyzers
         {
             get
             {
-                // Create CA1051 analyzer
-                var type = Type.GetType("Microsoft.CodeQuality.Analyzers.ApiDesignGuidelines.DoNotDeclareVisibleInstanceFieldsAnalyzer, Microsoft.CodeAnalysis.NetAnalyzers",
+                // Create IDE0060 analyzer
+                var type = Type.GetType("Microsoft.CodeAnalysis.CSharp.RemoveUnusedParametersAndValues.CSharpRemoveUnusedParametersAndValuesDiagnosticAnalyzer, Microsoft.CodeAnalysis.CSharp.Features",
                     throwOnError: true)!;
                 var analyzer = (DiagnosticAnalyzer)Activator.CreateInstance(type)!;
                 yield return analyzer;
@@ -27,19 +27,20 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                     root = true
 
                     [*.cs]
-                    dotnet_code_quality.{AnalyzerIdentifiers.ProtectedReadonlyFieldSuppression}.enabled = true
-
-                    [*.cs]
-                    dotnet_diagnostic.CA1051.severity = warning
+                    dotnet_diagnostic.IDE0060.severity = warning
+                    dotnet_code_quality_unused_parameters = all:warning
                     """));
             base.SetupTestState(state);
         }
 
         [Test]
-        public async Task ShouldSuppressIfProtectedReadonlyField()
+        public async Task ShouldSuppressIfInsideAsyncFunction()
         {
             var source =
                 """
+                using System.Threading;
+                using System.Threading.Tasks;
+
                 #pragma warning disable CS1591
                 #pragma warning disable CS1998
 
@@ -47,21 +48,26 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                 {
                     public class Test
                     {
-                        protected readonly int {|#0:_field|} = 1;
+                        public async Task FuncAsync(CancellationToken {|#0:cancellationToken|})
+                        {
+                            return;
+                        }
                     }
                 }
                 """;
             await VerifySuppressorAsync(source,
-                DiagnosticResult.CompilerWarning("CA1051")
+                DiagnosticResult.CompilerWarning("IDE0060")
                     .WithLocation(0)
                     .WithIsSuppressed(true)
                 );
         }
         [Test]
-        public async Task ShouldNotSuppressIfProtectedField()
+        public async Task ShouldNotSuppressIfInsideSyncFunction()
         {
             var source =
                 """
+                using System.Threading;
+
                 #pragma warning disable CS1591
                 #pragma warning disable CS1998
 
@@ -69,15 +75,19 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Supressors
                 {
                     public class Test
                     {
-                        protected int {|#0:_field|} = 1;
+                        public void Func(CancellationToken {|#0:cancellationToken|})
+                        {
+                            return;
+                        }
                     }
                 }
                 """;
             await VerifySuppressorAsync(source,
-                DiagnosticResult.CompilerWarning("CA1051")
+                DiagnosticResult.CompilerWarning("IDE0060")
                     .WithLocation(0)
                     .WithIsSuppressed(false)
                 );
         }
+
     }
 }

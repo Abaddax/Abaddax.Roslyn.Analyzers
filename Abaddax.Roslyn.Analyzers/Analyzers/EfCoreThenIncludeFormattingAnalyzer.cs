@@ -17,7 +17,8 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             messageFormat: "Consider placing 'ThenInclude' in the same line or indented one level compared to the 'Include'",
             category: "Style",
             defaultSeverity: DiagnosticSeverity.Info,
-            isEnabledByDefault: true);
+            isEnabledByDefault: true,
+            helpLinkUri: AnalyzerIdentifiers.GetAnalyzerHelpUri(AnalyzerIdentifiers.EfCoreThenIncludeFormattingAnalyzer));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; }
             = ImmutableArray.Create(_Rule);

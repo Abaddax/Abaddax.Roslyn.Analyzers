@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.Operations;
 using System.Collections.Immutable;
 using static Abaddax.Roslyn.Analyzers.Helper.ExpressionSyntaxHelper;
 
-namespace Abaddax.Roslyn.Analyzers.Supressors
+namespace Abaddax.Roslyn.Analyzers.Suppressors
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class EfCoreQueryNullabilitySuppressor : DiagnosticSuppressor
@@ -95,7 +95,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                     return true;
                 }
 
-                // If we are currenly a nested call inside the actual query expression also check parent invocations
+                // If we are currently a nested call inside the actual query expression also check parent invocations
                 current = current.Parent;
             }
             return false;

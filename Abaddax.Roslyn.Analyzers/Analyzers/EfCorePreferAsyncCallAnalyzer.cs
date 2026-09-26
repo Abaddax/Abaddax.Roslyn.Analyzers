@@ -13,11 +13,12 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
     {
         private static readonly DiagnosticDescriptor _Rule = new DiagnosticDescriptor(
             id: AnalyzerIdentifiers.EfCorePreferAsyncCallAnalyzer,
-            title: "Use async EF Core methods",
-            messageFormat: "Consider using '{0}Async' instead of '{0}' for EF Core queries inside async methods",
+            title: "Use async EF Core methods inside async function",
+            messageFormat: "Consider using '{0}Async' instead of '{0}' for EF Core queries inside async function",
             category: "AsyncUsage",
             defaultSeverity: DiagnosticSeverity.Warning,
-            isEnabledByDefault: true);
+            isEnabledByDefault: true,
+            helpLinkUri: AnalyzerIdentifiers.GetAnalyzerHelpUri(AnalyzerIdentifiers.EfCorePreferAsyncCallAnalyzer));
 
         private static readonly IReadOnlyCollection<string> _EfSyncMethods = new HashSet<string>(StringComparer.Ordinal)
         {

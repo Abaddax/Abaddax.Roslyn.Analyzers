@@ -16,7 +16,8 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             messageFormat: "Consider explicitly specifying the tracking behavior for EF Core queries at the start",
             category: "Style",
             defaultSeverity: DiagnosticSeverity.Info,
-            isEnabledByDefault: true);
+            isEnabledByDefault: true,
+            helpLinkUri: AnalyzerIdentifiers.GetAnalyzerHelpUri(AnalyzerIdentifiers.EfCoreExplicitTrackingAnalyzer));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; }
             = ImmutableArray.Create(_Rule);

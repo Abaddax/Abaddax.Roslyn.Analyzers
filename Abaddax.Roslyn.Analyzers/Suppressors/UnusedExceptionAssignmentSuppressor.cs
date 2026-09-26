@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
 
-namespace Abaddax.Roslyn.Analyzers.Supressors
+namespace Abaddax.Roslyn.Analyzers.Suppressors
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class UnusedExceptionAssignmentSuppressor : DiagnosticSuppressor
@@ -16,7 +16,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             }.Select(x => new SuppressionDescriptor(
                 id: AnalyzerIdentifiers.UnusedExceptionAssignmentSuppression,
                 suppressedDiagnosticId: x,
-                justification: "This is an exception variable inside a catch block. The warning is irellevant in this case."))
+                justification: "This is an exception variable inside a catch block. The warning is irrelevant in this case."))
             .ToArray();
 
         public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions { get; }

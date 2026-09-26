@@ -58,7 +58,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
 
-        //TODO:  ShouldTraverseAssignmentIfLoop -> How should it behave correclty?
+        //TODO:  ShouldTraverseAssignmentIfLoop -> How should it behave correctly?
 
         [Test]
         public void ShouldTraverseAssignmentIfForeach()

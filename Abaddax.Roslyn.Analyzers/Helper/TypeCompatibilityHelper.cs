@@ -21,17 +21,17 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         }
 
         /// <summary>
-        /// Checks if <paramref name="canditateType"/> is a possible alternative for <paramref name="baselineType"/>
+        /// Checks if <paramref name="candidateType"/> is a possible alternative for <paramref name="baselineType"/>
         /// </summary>
         /// <remarks>Will check for <list type="bullet">
         /// <item>Equality</item>
-        /// <item>Implicit/Explicit convertablitiy</item>
-        /// <item>Convertablitiy via a Property. (e.g. obj.Stream)</item>
+        /// <item>Implicit/Explicit convertibility</item>
+        /// <item>Convertibility via a Property. (e.g. obj.Stream)</item>
         /// <item>Special cases for Array/Span/Memory/ArraySegment</item>
         /// </list></remarks>
         /// <returns></returns>
         public static bool IsTypeAlternative(
-            ITypeSymbol canditateType,
+            ITypeSymbol candidateType,
             ITypeSymbol baselineType,
             SemanticModel semanticModel,
             int position,
@@ -39,13 +39,13 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         {
             // Exact match
             if (options.HasFlag(AlternativityOptions.DirectMatch) &&
-                SymbolEqualityComparer.Default.Equals(canditateType, baselineType))
+                SymbolEqualityComparer.Default.Equals(candidateType, baselineType))
             {
                 return true;
             }
             // Convertible match
             if (options.HasFlag(AlternativityOptions.ConversionMatch) &&
-                semanticModel.Compilation.ClassifyConversion(baselineType, canditateType) is { Exists: true } conversion)
+                semanticModel.Compilation.ClassifyConversion(baselineType, candidateType) is { Exists: true } conversion)
             {
                 if (conversion.IsImplicit)
                     return true;
@@ -53,19 +53,19 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     return true;
             }
             // Is Array-like
-            if (IsArrayLikeEquivalent(canditateType, baselineType, semanticModel, position, options))
+            if (IsArrayLikeEquivalent(candidateType, baselineType, semanticModel, position, options))
             {
                 return true;
             }
             // Has conversion via ToX()/AsX()
             if (options.HasFlag(AlternativityOptions.MethodConversionMatch) &&
-                HasConversionMethod(canditateType, baselineType, semanticModel, position, options))
+                HasConversionMethod(candidateType, baselineType, semanticModel, position, options))
             {
                 return true;
             }
             // Has convertsion via property
             if (options.HasFlag(AlternativityOptions.PropertyConversionMatch) &&
-                HasConversionProperty(canditateType, baselineType, semanticModel, position, options))
+                HasConversionProperty(candidateType, baselineType, semanticModel, position, options))
             {
                 return true;
             }
@@ -73,26 +73,26 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         }
 
         private static bool HasConversionMethod(
-            ITypeSymbol canditateType,
+            ITypeSymbol candidateType,
             ITypeSymbol baselineType,
             SemanticModel semanticModel,
             int position,
             AlternativityOptions options)
         {
-            var canditateTypeName = canditateType.Name;
-            if (canditateType is IArrayTypeSymbol)
-                canditateTypeName = "Array";
-            var targetNames = canditateTypeName switch
+            var candidateTypeName = candidateType.Name;
+            if (candidateType is IArrayTypeSymbol)
+                candidateTypeName = "Array";
+            var targetNames = candidateTypeName switch
             {
                 // Do not consider ToString a valid conversion!
                 "String" => new[] { "AsString" },
-                _ => new[] { $"To{canditateTypeName}", $"As{canditateTypeName}" }
+                _ => new[] { $"To{candidateTypeName}", $"As{candidateTypeName}" }
             };
 
             foreach (var targetName in targetNames)
             {
                 if (MethodExtensions.ListPotentialAlternatives(baselineType, targetName, semanticModel, position)
-                    .Any(x => IsTypeAlternative(x.ReturnType, canditateType, semanticModel, position, options)))
+                    .Any(x => IsTypeAlternative(x.ReturnType, candidateType, semanticModel, position, options)))
                 {
                     return true;
                 }
@@ -100,7 +100,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             return false;
         }
         private static bool HasConversionProperty(
-            ITypeSymbol canditateType,
+            ITypeSymbol candidateType,
             ITypeSymbol baselineType,
             SemanticModel semanticModel,
             int position,
@@ -111,30 +111,30 @@ namespace Abaddax.Roslyn.Analyzers.Helper
 
             return named.GetMembers()
                 .OfType<IPropertySymbol>()
-                .Where(x => x.Name == canditateType.Name)
-                .Any(p => IsTypeAlternative(canditateType, p.Type, semanticModel, position,
+                .Where(x => x.Name == candidateType.Name)
+                .Any(p => IsTypeAlternative(candidateType, p.Type, semanticModel, position,
                     // Only check for direct and implicit type conversions
                     options & ~AlternativityOptions.MethodConversionMatch & ~AlternativityOptions.PropertyConversionMatch));
         }
         private static bool IsArrayLikeEquivalent(
-            ITypeSymbol canditateType,
+            ITypeSymbol candidateType,
             ITypeSymbol baselineType,
             SemanticModel semanticModel,
             int position,
             AlternativityOptions options)
         {
-            if (!IsArrayLikeType(canditateType))
+            if (!IsArrayLikeType(candidateType))
                 return false;
             if (!IsArrayLikeType(baselineType))
                 return false;
 
-            var canditateElementType = canditateType.GetGenericParameter(0);
+            var candidateElementType = candidateType.GetGenericParameter(0);
             var baselineElementType = baselineType.GetGenericParameter(0);
 
             return
-                canditateElementType is not null &&
+                candidateElementType is not null &&
                 baselineElementType is not null &&
-                IsTypeAlternative(canditateElementType, baselineElementType, semanticModel, position,
+                IsTypeAlternative(candidateElementType, baselineElementType, semanticModel, position,
                     // Only check for direct and implicit type conversions
                     options & ~AlternativityOptions.MethodConversionMatch & ~AlternativityOptions.PropertyConversionMatch);
 
@@ -153,7 +153,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         /// <summary>
         /// Constructs the <paramref name="genericMethod"/> given the <paramref name="typeArguments"/>/<paramref name="typeArgumentNullableAnnotations"/>
         /// </summary>
-        /// <remarks>Also checks if the generic constrains are fullfilles</remarks>
+        /// <remarks>Also checks if the generic constrains are fulfills</remarks>
         public static IMethodSymbol? ConstructGenericMethod(
             IMethodSymbol genericMethod,
             ImmutableArray<ITypeSymbol> typeArguments,
@@ -171,18 +171,18 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 var genericParameter = genericMethod.TypeParameters[i];
                 var actualParameter = method.TypeArguments[i];
 
-                if (!FullfillsGenericConstraint(genericParameter, actualParameter, semanticModel))
+                if (!FulfillsGenericConstraint(genericParameter, actualParameter, semanticModel))
                     return null;
             }
             return method;
         }
 
         /// <summary>
-        /// Checks if <paramref name="type"/> fullfills all constains of <paramref name="genericParameter"/>
+        /// Checks if <paramref name="type"/> fulfills all constrains of <paramref name="genericParameter"/>
         /// </summary>
-        public static bool FullfillsGenericConstraint(ITypeParameterSymbol genericParameter, ITypeSymbol type, SemanticModel semanticModel)
+        public static bool FulfillsGenericConstraint(ITypeParameterSymbol genericParameter, ITypeSymbol type, SemanticModel semanticModel)
         {
-            // Check 'class' cosntraint
+            // Check 'class' constraint
             if (genericParameter.HasReferenceTypeConstraint && !type.IsReferenceType)
                 return false;
             // Check 'struct' constraint

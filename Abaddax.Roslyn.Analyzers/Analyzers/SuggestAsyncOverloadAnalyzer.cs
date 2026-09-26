@@ -13,11 +13,12 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
     {
         private static readonly DiagnosticDescriptor _Rule = new DiagnosticDescriptor(
             id: AnalyzerIdentifiers.PreferAsyncOverloadAnalyzer,
-            title: "Use async overload method",
+            title: "Use async overload in async methods",
             messageFormat: "Consider using '{0}Async' instead of '{0}' inside async functions",
             category: "AsyncUsage",
             defaultSeverity: DiagnosticSeverity.Info,
-            isEnabledByDefault: true);
+            isEnabledByDefault: true,
+            helpLinkUri: AnalyzerIdentifiers.GetAnalyzerHelpUri(AnalyzerIdentifiers.PreferAsyncOverloadAnalyzer));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; }
             = ImmutableArray.Create(_Rule);
@@ -76,7 +77,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
         private static bool HasAsyncAlternative(IMethodSymbol callerMethod, IMethodSymbol method, ITypeSymbol receiverType, SemanticModel semanticModel, int position)
         {
             var candidates = PotentialAsyncAlternatives(method, receiverType, semanticModel, position)
-                // Do not suggest original method! Otherwise this could unintentianally cause a stack overflow 
+                // Do not suggest original method! Otherwise this could unintentionally cause a stack overflow 
                 .Where(candidate => !SymbolEqualityComparer.Default.Equals(candidate, callerMethod))
                 // Do not suggest obsolete methods
                 .Where(candidate => !candidate.GetAttributes("ObsoleteAttribute", "System").Any())
@@ -113,7 +114,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                         return alternative;
                     // Original type arguments
                     var genericArguments = method.TypeArguments;
-                    // Check rought generic matches
+                    // Check rough generic matches
                     if (genericArguments.Length != 0 && genericArguments.Length > alternative.TypeArguments.Length)
                         return null;
                     // Original was non generic, but alternative is generic
@@ -136,7 +137,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                             .ToList();
                         if (SymbolEqualityComparer.Default.Equals(alternative.ReturnType, typeArgument))
                             candidateTypes.Add(method.ReturnType);
-                        // No match or ambigous match found
+                        // No match or ambiguous match found
                         if (candidateTypes.Distinct(SymbolEqualityComparer.Default).ExactlyOneOrDefault() is not ITypeSymbol candidateType)
                             return null;
                         genericArguments = genericArguments.Add(candidateType);
@@ -172,19 +173,19 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 .Select(x => (x.BaselineParameter, x.CandidateParameter));
 
             // Check parameter compatibility
-            var foundUnmatchedCancallationToken = false;
+            var foundUnmatchedCancellationToken = false;
             foreach (var parameter in parameters)
             {
                 if (parameter.CandidateParameter == null)
                     return false; // No match found
-                if (foundUnmatchedCancallationToken)
+                if (foundUnmatchedCancellationToken)
                     return false; // Additional 'CancellationToken' is not at the end
                 if (parameter.BaselineParameter == null)
                 {
                     // Allow additional 'CancellationToken' at the end
                     if (parameter.CandidateParameter.Type.HasName("CancellationToken", "System.Threading"))
                     {
-                        foundUnmatchedCancallationToken = true;
+                        foundUnmatchedCancellationToken = true;
                         continue;
                     }
                     // Everything else -> no match -> fail

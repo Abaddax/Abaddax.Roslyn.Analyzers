@@ -6,8 +6,8 @@ using NUnit.Framework;
 
 namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
 {
-    public sealed class UncoditionalSelfRecursionAnalyzerTests
-        : AnalyzerTestBase<UncoditionalSelfRecursionAnalyzer>
+    public sealed class UnconditionalSelfRecursionAnalyzerTests
+        : AnalyzerTestBase<UnconditionalSelfRecursionAnalyzer>
     {
         [Test]
         public async Task ShouldReportIfSimpleSelfRecursion()
@@ -26,7 +26,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 }
                 """;
             await VerifyAnalyzerAsync(source,
-                new DiagnosticResult(AnalyzerIdentifiers.UncoditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
+                new DiagnosticResult(AnalyzerIdentifiers.UnconditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
                     .WithLocation(0)
                 );
         }
@@ -49,7 +49,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 }
                 """;
             await VerifyAnalyzerAsync(source,
-                new DiagnosticResult(AnalyzerIdentifiers.UncoditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
+                new DiagnosticResult(AnalyzerIdentifiers.UnconditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
                     .WithLocation(0)
                 );
         }
@@ -133,7 +133,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 }
                 """;
             await VerifyAnalyzerAsync(source,
-                new DiagnosticResult(AnalyzerIdentifiers.UncoditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
+                new DiagnosticResult(AnalyzerIdentifiers.UnconditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
                     .WithLocation(0)
                 );
         }
@@ -157,7 +157,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 }
                 """;
             await VerifyAnalyzerAsync(source,
-                new DiagnosticResult(AnalyzerIdentifiers.UncoditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
+                new DiagnosticResult(AnalyzerIdentifiers.UnconditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
                     .WithLocation(0)
                 );
         }
@@ -180,7 +180,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 }
                 """;
             await VerifyAnalyzerAsync(source,
-                new DiagnosticResult(AnalyzerIdentifiers.UncoditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
+                new DiagnosticResult(AnalyzerIdentifiers.UnconditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
                     .WithLocation(0)
                 );
         }
@@ -233,7 +233,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 }
                 """;
             await VerifyAnalyzerAsync(source,
-                new DiagnosticResult(AnalyzerIdentifiers.UncoditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
+                new DiagnosticResult(AnalyzerIdentifiers.UnconditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
                     .WithLocation(0)
                 );
         }
@@ -262,9 +262,9 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 }
                 """;
             await VerifyAnalyzerAsync(source,
-                new DiagnosticResult(AnalyzerIdentifiers.UncoditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
+                new DiagnosticResult(AnalyzerIdentifiers.UnconditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
                     .WithLocation(0),
-                new DiagnosticResult(AnalyzerIdentifiers.UncoditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
+                new DiagnosticResult(AnalyzerIdentifiers.UnconditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
                     .WithLocation(1)
                 );
         }
@@ -354,9 +354,9 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 }
                 """;
             await VerifyAnalyzerAsync(source,
-                new DiagnosticResult(AnalyzerIdentifiers.UncoditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
+                new DiagnosticResult(AnalyzerIdentifiers.UnconditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
                     .WithLocation(0),
-                new DiagnosticResult(AnalyzerIdentifiers.UncoditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
+                new DiagnosticResult(AnalyzerIdentifiers.UnconditionalSelfRecursionAnalyzer, DiagnosticSeverity.Error)
                     .WithLocation(1)
                 );
         }

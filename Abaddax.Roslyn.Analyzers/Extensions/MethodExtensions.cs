@@ -34,7 +34,7 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
         /// <summary>
         /// Checks if the declaration <paramref name="method"/> is async compatible via return type
         /// </summary>
-        /// <remarks>Unlike <see cref="IsAsyncMethod(IMethodSymbol)"/> this method skips overriden methods, as the signature is given by the base class</remarks>
+        /// <remarks>Unlike <see cref="IsAsyncMethod(IMethodSymbol)"/> this method skips overridden methods, as the signature is given by the base class</remarks>
         public static bool IsTaskedMethodDeclaration(this IMethodSymbol method)
         {
             // Check return type: Task or ValueTask

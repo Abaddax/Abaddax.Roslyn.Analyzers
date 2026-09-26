@@ -8,15 +8,16 @@ using System.Collections.Immutable;
 namespace Abaddax.Roslyn.Analyzers.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public sealed class UncoditionalSelfRecursionAnalyzer : DiagnosticAnalyzer
+    public sealed class UnconditionalSelfRecursionAnalyzer : DiagnosticAnalyzer
     {
         private static readonly DiagnosticDescriptor _Rule = new DiagnosticDescriptor(
-            id: AnalyzerIdentifiers.UncoditionalSelfRecursionAnalyzer,
-            title: "Uncoditional self recursion",
-            messageFormat: "The method '{0}' unconditioanlly calls ifself and will cause a 'StackOverflowException'",
+            id: AnalyzerIdentifiers.UnconditionalSelfRecursionAnalyzer,
+            title: "Unconditional self recursion",
+            messageFormat: "The method '{0}' unconditionally calls itself and will cause a 'StackOverflowException'",
             category: "Reliability",
             defaultSeverity: DiagnosticSeverity.Error,
-            isEnabledByDefault: true);
+            isEnabledByDefault: true,
+            helpLinkUri: AnalyzerIdentifiers.GetAnalyzerHelpUri(AnalyzerIdentifiers.UnconditionalSelfRecursionAnalyzer));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; }
             = ImmutableArray.Create(_Rule);
@@ -45,7 +46,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 if (cfg == null)
                     continue;
 
-                if (HasUncoditionalRecursion(cfg, method))
+                if (HasUnconditionalRecursion(cfg, method))
                 {
                     var diagnostic = Diagnostic.Create(_Rule, method.Locations[0], method.Name);
                     context.ReportDiagnostic(diagnostic);
@@ -55,7 +56,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             }
         }
 
-        private static bool HasUncoditionalRecursion(
+        private static bool HasUnconditionalRecursion(
             ControlFlowGraph cfg,
             IMethodSymbol method)
         {
@@ -77,14 +78,14 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 if (!visited.Add(currentBlock))
                     continue;
 
-                // Check if the block contains a recursiv call
-                if (BlockContainsRecursivCall(currentBlock, method))
+                // Check if the block contains a recursive call
+                if (BlockContainsRecursiveCall(currentBlock, method))
                 {
                     foundRecursion = true;
                     continue; // Stop exploring this specific execution path
                 }
 
-                // If we reached the exit cleanly without hiting a recursion
+                // If we reached the exit cleanly without hitting a recursion
                 // This means there is a safe path to exit
                 if (currentBlock.Kind == BasicBlockKind.Exit)
                 {
@@ -97,27 +98,27 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 if (currentBlock.FallThroughSuccessor?.Destination != null)
                     queue.Enqueue(currentBlock.FallThroughSuccessor.Destination);
             }
-            // We exhaused all paths, if we found any uncoditional recursion this will be true
+            // We exhausted all paths, if we found any unconditional recursion this will be true
             return foundRecursion;
         }
-        private static bool BlockContainsRecursivCall(
+        private static bool BlockContainsRecursiveCall(
             BasicBlock currentBlock,
             IMethodSymbol method)
         {
             // Search all statements in the block
             foreach (var operation in currentBlock.Operations)
             {
-                if (HasRecursivCall(operation, method))
+                if (HasRecursiveCall(operation, method))
                     return true;
             }
 
             // Search the branch conditions
-            if (HasRecursivCall(currentBlock.BranchValue, method))
+            if (HasRecursiveCall(currentBlock.BranchValue, method))
                 return true;
 
             return false;
         }
-        private static bool HasRecursivCall(
+        private static bool HasRecursiveCall(
             IOperation? operation,
             IMethodSymbol method)
         {
@@ -152,10 +153,10 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 }
             }
 
-            // Recursivly check child operations
+            // Recursively check child operations
             foreach (var child in operation.ChildOperations)
             {
-                if (HasRecursivCall(child, method))
+                if (HasRecursiveCall(child, method))
                     return true;
             }
             return false;

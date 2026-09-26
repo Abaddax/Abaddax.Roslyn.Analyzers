@@ -16,7 +16,8 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             messageFormat: "Method '{0}' returns a Task/ValueTask and does not end with 'Async'",
             category: "AsyncUsage",
             defaultSeverity: DiagnosticSeverity.Info,
-            isEnabledByDefault: true);
+            isEnabledByDefault: true,
+            helpLinkUri: AnalyzerIdentifiers.GetAnalyzerHelpUri(AnalyzerIdentifiers.PreferAsyncSuffixAnalyzer));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; }
             = ImmutableArray.Create(_Rule);

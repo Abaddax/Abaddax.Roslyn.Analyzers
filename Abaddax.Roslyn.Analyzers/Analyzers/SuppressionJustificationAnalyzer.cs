@@ -18,7 +18,8 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             messageFormat: "Suppression of warning '{0}' requires a justification",
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
-            isEnabledByDefault: true);
+            isEnabledByDefault: true,
+            helpLinkUri: AnalyzerIdentifiers.GetAnalyzerHelpUri(AnalyzerIdentifiers.SuppressionJustificationAnalyzer));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; }
             = ImmutableArray.Create(_Rule);

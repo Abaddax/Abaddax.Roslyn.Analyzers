@@ -33,7 +33,7 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                 var originalOperation = operation;
                 while (operation.Parent != null)
                     operation = operation.Parent;
-                // Prevent Stackoverlow
+                // Prevent stack overflow
                 if (originalOperation == operation)
                     return null;
 

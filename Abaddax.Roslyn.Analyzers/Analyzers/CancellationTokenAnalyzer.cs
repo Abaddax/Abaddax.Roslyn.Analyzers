@@ -16,7 +16,8 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             messageFormat: "Method '{0}' returns a Task/ValueTask and should accept a 'CancellationToken' parameter",
             category: "AsyncUsage",
             defaultSeverity: DiagnosticSeverity.Warning,
-            isEnabledByDefault: true);
+            isEnabledByDefault: true,
+            helpLinkUri: AnalyzerIdentifiers.GetAnalyzerHelpUri(AnalyzerIdentifiers.AddCancellationTokenAnalyzer));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; }
             = ImmutableArray.Create(_Rule);

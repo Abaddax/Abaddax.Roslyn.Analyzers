@@ -461,14 +461,14 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                                 // Special checks for properties/fields
                                 if (targetSymbol is IPropertySymbol or IFieldSymbol)
                                 {
-                                    // Block for instance method invocations, as they could protentially alter the property
+                                    // Block for instance method invocations, as they could potentially alter the property
                                     if (x.Operation is IInstanceReferenceOperation { Parent: IInvocationOperation } instanceInvocation &&
                                         (instanceInvocation.Type?.IsDerivedFrom(targetSymbol.ContainingType) ?? false))
                                     {
                                         // Block via empty assignment
                                         return (x.Operation, (null, null));
                                     }
-                                    // Block for calls that pass 'this' parameter, as they could protentially alter a public property
+                                    // Block for calls that pass 'this' parameter, as they could potentially alter a public property
                                     if (targetSymbol.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedAndInternal &&
                                         x.Operation is IInvocationOperation thisPassedInvocation &&
                                         thisPassedInvocation.Arguments
@@ -493,11 +493,11 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                                         return x;
                                     try
                                     {
-                                        var possibledAssignments = GetPossibleLastAssignmentInternal(variable, semanticModel, localCfg, outerArguments, callStack, maxCallStackDepth, cancellationToken);
-                                        var possibledAssignment = possibledAssignments.ExactlyOneOrDefault();
-                                        if (possibledAssignment == null)
+                                        var possibleAssignments = GetPossibleLastAssignmentInternal(variable, semanticModel, localCfg, outerArguments, callStack, maxCallStackDepth, cancellationToken);
+                                        var possibleAssignment = possibleAssignments.ExactlyOneOrDefault();
+                                        if (possibleAssignment == null)
                                             return x;
-                                        return (x.Operation, (possibledAssignment, possibledAssignment));
+                                        return (x.Operation, (possibleAssignment, possibleAssignment));
                                     }
                                     finally
                                     {
@@ -674,7 +674,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 var lastAssignment = lastAssignments.ExactlyOneOrDefault();
                 if (lastAssignment == null)
                 {
-                    // We hit an end, possibly a parameter reference? If so check if we can move up into the caller (if we are currenly inside a local function/delegate)
+                    // We hit an end, possibly a parameter reference? If so check if we can move up into the caller (if we are currently inside a local function/delegate)
                     if (operation is not IParameterReferenceOperation parameterReference)
                         return operation;
                     var possibleCallingOperations = GetCallingOperations(parameterReference, semanticModel, cancellationToken);
@@ -984,7 +984,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         }
 
         /// <summary>
-        /// Tries to find the <paramref name="startBlock"/> and <paramref name="usageIndex"/> of <paramref name="variableUsageNode"/> insise the given <paramref name="cfg"/>
+        /// Tries to find the <paramref name="startBlock"/> and <paramref name="usageIndex"/> of <paramref name="variableUsageNode"/> inside the given <paramref name="cfg"/>
         /// </summary>
         private static void FindStartingBlock(
             ControlFlowGraph cfg,
@@ -1030,9 +1030,9 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         }
 
         /// <summary>
-        /// Finds all curresponding local caller parameter reference for the given <paramref name="paramRef"/>
+        /// Finds all corresponding local caller parameter reference for the given <paramref name="paramRef"/>
         /// </summary>
-        /// <returns>CallerParamRef and ParentInvocation, if the invocation happended inside another parent invocation</returns>
+        /// <returns>CallerParamRef and ParentInvocation, if the invocation happened inside another parent invocation</returns>
         private static IEnumerable<(IOperation CallerParamRef, IInvocationOperation? ParentInvocation)> GetCallingOperations(
             IParameterReferenceOperation paramRef,
             SemanticModel semanticModel,

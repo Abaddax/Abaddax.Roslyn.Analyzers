@@ -2,6 +2,19 @@
   <Folder Name="/Solution items/">
     <File Path="Directory.Build.props" />
   </Folder>
+  <Folder Name="/Solution items/docs/">
+    <File Path="docs/README.md" />
+  </Folder>
+  <Folder Name="/Solution items/docs/Analyzers/">
+    <File Path="docs/Analyzers/ABX0001.md" />
+    <File Path="docs/Analyzers/ABX0002.md" />
+    <File Path="docs/Analyzers/ABX0003.md" />
+    <File Path="docs/Analyzers/ABX0004.md" />
+    <File Path="docs/Analyzers/ABX0005.md" />
+    <File Path="docs/Analyzers/ABX0006.md" />
+    <File Path="docs/Analyzers/ABX0007.md" />
+    <File Path="docs/Analyzers/ABX0008.md" />
+  </Folder>
   <Folder Name="/Solution items/workflows/">
     <File Path=".github/workflows/ci.yml" />
     <File Path=".github/workflows/publish.nuget.yml" />

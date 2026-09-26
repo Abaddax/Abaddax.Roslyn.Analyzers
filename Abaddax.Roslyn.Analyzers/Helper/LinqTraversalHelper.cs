@@ -27,10 +27,10 @@ namespace Abaddax.Roslyn.Analyzers.Helper
 
             // Check for [ForwardedParameterAttribute] for custom LINQ style methods
             if (linqParameter.GetAttributes(AttributeHelper.IsForwardedParameterAttribute)
-                .FirstOrDefault() is AttributeData forwarededParameterAttribute)
+                .FirstOrDefault() is AttributeData forwardedParameterAttribute)
             {
                 return GetForwardedParameterAttributeParameter(
-                    forwarededParameterAttribute,
+                    forwardedParameterAttribute,
                     linqMethodInvocation,
                     lambdaParameterIndex);
             }
@@ -48,11 +48,11 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         }
 
         private static IOperation? GetForwardedParameterAttributeParameter(
-            AttributeData forwarededParameterAttribute,
+            AttributeData forwardedParameterAttribute,
             IInvocationOperation linqMethodInvocation,
             int lambdaParameterIndex)
         {
-            var forwardedParameterNames = forwarededParameterAttribute.ParseConstructorArguments(AttributeHelper.ParseForwardedParameterAttribute);
+            var forwardedParameterNames = forwardedParameterAttribute.ParseConstructorArguments(AttributeHelper.ParseForwardedParameterAttribute);
             var forwardedParameterName = forwardedParameterNames.ElementAtOrDefault(lambdaParameterIndex);
             if (string.IsNullOrEmpty(forwardedParameterName))
                 return null;

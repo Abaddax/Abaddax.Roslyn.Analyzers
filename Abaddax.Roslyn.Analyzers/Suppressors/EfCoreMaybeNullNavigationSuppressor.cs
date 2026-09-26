@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.Operations;
 using System.Collections.Immutable;
 using static Abaddax.Roslyn.Analyzers.Helper.ExpressionSyntaxHelper;
 
-namespace Abaddax.Roslyn.Analyzers.Supressors
+namespace Abaddax.Roslyn.Analyzers.Suppressors
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class EfCoreMaybeNullNavigationSuppressor : DiagnosticSuppressor
@@ -69,7 +69,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             {
                 node = TraverseAssignments(identifier, semanticModel, context.CancellationToken);
             }
-            // Unwarp awaits
+            // Unwrap awaits
             if (node is AwaitExpressionSyntax asyncAccess)
             {
                 node = asyncAccess.Expression;
@@ -102,7 +102,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             if (node is InvocationExpressionSyntax invocation)
             {
                 // Check if the select points to property with [MaybeNull] attribute
-                if (IsMaybeNullProperySelection(invocation, semanticModel, context.CancellationToken))
+                if (IsMaybeNullPropertySelection(invocation, semanticModel, context.CancellationToken))
                 {
                     var origin = TryExpand(invocation, semanticModel, context.CancellationToken,
                         onTraverseCallback: TraverseCallback);
@@ -180,7 +180,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
         /// <summary>
         /// Build the property path referenced by <paramref name="origin"/>
         /// </summary>
-        /// <returns>Propery-Chain. Items are in reverse! So x.A.B -> [B,A]</returns>
+        /// <returns>Property-Chain. Items are in reverse! So x.A.B -> [B,A]</returns>
         private static string[] BuildPropertyChain(
             ExpressionOrigin origin,
             SemanticModel semanticModel,
@@ -279,7 +279,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
             if (propertyChain.Length == 0)
                 return false;
 
-            var includedProperyChains = new List<string[]>();
+            var includedPropertyChains = new List<string[]>();
             var currentPropertyChain = new List<string>();
             var selectPropertyChain = new List<string>();
 
@@ -307,7 +307,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                                         currentPropertyChain.Insert(0, propertyName);
 
                                     //Start new include chain
-                                    includedProperyChains.Add(currentPropertyChain.ToArray());
+                                    includedPropertyChains.Add(currentPropertyChain.ToArray());
                                     currentPropertyChain = selectPropertyChain.ToList();
                                 }
                                 else if (method.HasName("ThenInclude", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions"))
@@ -332,7 +332,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                                         .WhereNotNullOrWhiteSpace()
                                         .Select(x => x.Split(['.'], StringSplitOptions.RemoveEmptyEntries))
                                         .Where(x => x.Length > 0);
-                                    includedProperyChains.AddRange(included);
+                                    includedPropertyChains.AddRange(included);
                                 }
                             }
 
@@ -391,7 +391,7 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
 
             // Append current
             if (currentPropertyChain.Count > 0)
-                includedProperyChains.Add(currentPropertyChain.ToArray());
+                includedPropertyChains.Add(currentPropertyChain.ToArray());
 
             // Check for attribute in initial variable assignment (factory)
             foreach (var includeChain in FindEfCorePropertyIncludedAttributeChains(current, semanticModel, cancellationToken))
@@ -399,19 +399,19 @@ namespace Abaddax.Roslyn.Analyzers.Supressors
                 var chain = includeChain.Split(['.'], StringSplitOptions.RemoveEmptyEntries);
                 if (chain.Length == 0)
                     continue;
-                includedProperyChains.Add(chain);
+                includedPropertyChains.Add(chain);
             }
 
-            // Check if properychain is included
-            foreach (var chain in includedProperyChains)
+            // Check if property-chain is included
+            foreach (var chain in includedPropertyChains)
             {
-                // Check if one of the attribues garantees the current needed property includes
+                // Check if one of the attributes guarantees the current needed property includes
                 if (chain.Take(propertyChain.Length).SequenceEqual(propertyChain.AsEnumerable().Reverse(), StringComparer.Ordinal))
                     return true;
             }
             return false;
         }
-        private static bool IsMaybeNullProperySelection(
+        private static bool IsMaybeNullPropertySelection(
             ExpressionSyntax expression,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
