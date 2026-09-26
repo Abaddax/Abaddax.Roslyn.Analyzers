@@ -49,7 +49,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
         }
 
         [Test]
-        public async Task ShouldSuggestMissingTrackingBehaviour()
+        public async Task ShouldSuggestMissingTrackingBehavior()
         {
             var source =
                 """
@@ -73,7 +73,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 );
         }
         [Test]
-        public async Task ShouldNotSuggestTrackingBehaviourIfSpecified()
+        public async Task ShouldNotSuggestTrackingBehaviorIfSpecified()
         {
             var source =
                 """
@@ -95,7 +95,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
             await VerifyAnalyzerAsync(source);
         }
         [Test]
-        public async Task ShouldSuggestTrackingBehaviourOutOfOrder()
+        public async Task ShouldSuggestTrackingBehaviorOutOfOrder()
         {
             var source =
                 """
@@ -119,6 +119,26 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 new DiagnosticResult(AnalyzerIdentifiers.EfCoreExplicitTrackingAnalyzer, DiagnosticSeverity.Info)
                     .WithLocation(0)
                 );
+        }
+        [Test]
+        public async Task ShouldNotSuggestTrackingBehaviorIfNoQuery()
+        {
+            var source =
+                """
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var db = new TestContext();
+                
+                            db.Persons.Add(new());
+                        }
+                    }
+                }
+                """;
+            await VerifyAnalyzerAsync(source);
         }
 
     }

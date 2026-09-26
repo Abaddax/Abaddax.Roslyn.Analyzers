@@ -46,10 +46,14 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             if (!receiverType.IsDbSet())
                 return;
 
-            // Skip methods that already have specific tracking behaviour
+            // Skip methods that act on IQueryable
             var symbol = context.SemanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol;
             if (symbol is not IMethodSymbol method)
                 return;
+            if (method.ReceiverType == null || !method.ReceiverType.HasName("IQueryable", "System.Linq"))
+                return;
+
+            // Skip methods that already have specific tracking behavior
             if (method.HasName("AsTracking", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions") ||
                 method.HasName("AsNoTrackingWithIdentityResolution", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions") ||
                 method.HasName("AsNoTracking", "Microsoft.EntityFrameworkCore", "EntityFrameworkQueryableExtensions"))
