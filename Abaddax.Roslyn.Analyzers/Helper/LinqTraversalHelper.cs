@@ -524,10 +524,10 @@ namespace Abaddax.Roslyn.Analyzers.Helper
 
         private static readonly Regex _MethodSignatureRegex = new Regex(
             @"^\s*(?<name>[A-Za-z_]\w*)(?:<(?<generics>.+?)>)?\((?<parameters>.*)\)\s*;?\s*$",
-            RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+            RegexOptions.Compiled, Timeout.InfiniteTimeSpan);
         private static readonly Regex _TypeSignatureRegex = new Regex(
             @"^(?<namespace>(?:[A-Za-z_]\w*\.)*)(?<typename>[A-Za-z_]\w*)(?:<(?<generics>.+?)>)?$",
-            RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+            RegexOptions.Compiled, Timeout.InfiniteTimeSpan);
 
         /// <summary>
         /// Checks if <paramref name="method"/> matches <paramref name="methodSignature"/>
