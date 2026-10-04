@@ -6,9 +6,9 @@
     <PackageId>Abaddax.Roslyn.Analyzers.Attributes</PackageId>
     <PackageTags>Abaddax.Roslyn.Analyzers, analyzers</PackageTags>
   </PropertyGroup>
-    
+
   <ItemGroup>
-    <PackageReference Include="Abaddax.Build.Common" Version="0.0.1-preview10">
+    <PackageReference Include="Abaddax.Build.Common" Version="0.0.1-preview11">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

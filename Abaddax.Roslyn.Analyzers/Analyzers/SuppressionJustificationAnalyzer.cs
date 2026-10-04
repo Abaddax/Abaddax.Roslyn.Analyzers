@@ -83,7 +83,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                     x.IsKind(SyntaxKind.PragmaWarningDirectiveTrivia) ||
                     x.IsKind(SyntaxKind.MultiLineCommentTrivia) ||
                     x.IsKind(SyntaxKind.SingleLineCommentTrivia))
-                .ToArray();               
+                .ToArray();
 
             foreach (var trivia in descendantTrivia)
             {
@@ -103,7 +103,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                         return x.ToFullString();
                     })
                     .ToArray();
-                if (errorCodes.Length == 0 || errorCodes.Contains(AnalyzerIdentifiers.SuppressionJustificationAnalyzer))
+                if (errorCodes.Length == 0 || errorCodes.Contains(AnalyzerIdentifiers.SuppressionJustificationAnalyzer, StringComparer.Ordinal))
                     continue;
 
                 // Check whether this pragma has a justification.
