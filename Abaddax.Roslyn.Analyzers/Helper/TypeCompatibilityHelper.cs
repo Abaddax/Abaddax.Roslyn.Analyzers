@@ -63,7 +63,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             {
                 return true;
             }
-            // Has convertsion via property
+            // Has conversion via property
             if (options.HasFlag(AlternativityOptions.PropertyConversionMatch) &&
                 HasConversionProperty(candidateType, baselineType, semanticModel, position, options))
             {

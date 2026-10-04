@@ -120,10 +120,10 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
             }
         }
         private static bool IsCalledFromDbContext(
-          InvocationExpressionSyntax queryInvocation,
-          SemanticModel semanticModel,
-          AnalyzerConfigOptions options,
-          CancellationToken cancellationToken)
+            InvocationExpressionSyntax queryInvocation,
+            SemanticModel semanticModel,
+            AnalyzerConfigOptions options,
+            CancellationToken cancellationToken)
         {
             // Skip check if option is set
             if (options.IsSet(AnalyzerIdentifiers.EfCoreQueryNullReferenceSuppression, "assume_all_queries_are_efcore_queries"))

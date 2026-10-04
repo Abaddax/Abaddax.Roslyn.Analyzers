@@ -1245,6 +1245,52 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                 );
         }
 
+        [Test]
+        public async Task ShouldSuppressIfCustomMarkedForwardedLambda()
+        {
+            var source =
+                """
+                #nullable enable
+                using Abaddax.Roslyn.Analyzers.Attributes;
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void Process(TestContext.TestEntity entity, [ForwardedParameter(nameof(entity))] Action<TestContext.TestEntity> action)
+                        {
+                            return;
+                        }
+                        public void Func()
+                        {
+                            var db = new TestContext();
+                
+                            var p = db.Persons
+                                .Include(x => x.Father)
+                                .First();
+
+                            Process(p, (pp) =>
+                            {
+                                var f = {|#0:pp.Father|}.ToString();
+                            });
+                            Process(new(), (pp) =>
+                            {
+                                var f = {|#1:pp.Father|}.ToString();
+                            });
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true),
+                 DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(false)
+                );
+        }
+
 
     }
 }

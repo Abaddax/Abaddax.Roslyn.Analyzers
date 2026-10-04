@@ -77,7 +77,7 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
             (IOperation? target, IOperation? value) = operation switch
             {
                 IAssignmentOperation a => (a.Target, a.Value),
-                IExpressionStatementOperation exprStmt => exprStmt.Operation.FindAssignmentTarget(targetSymbol) ?? (null!, null!),
+                IExpressionStatementOperation exprStatement => exprStatement.Operation.FindAssignmentTarget(targetSymbol) ?? (null!, null!),
                 IInvocationOperation invocation => invocation.Arguments
                     .Where(x => x.Parameter?.RefKind is RefKind.Out or RefKind.Ref)
                     .Where(x => x.Value.IsTargetMatch(targetSymbol))

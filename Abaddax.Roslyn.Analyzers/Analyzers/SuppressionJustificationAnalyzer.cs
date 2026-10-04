@@ -78,24 +78,50 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
 
             var root = context.Tree.GetRoot(context.CancellationToken);
 
-            foreach (var trivia in root.DescendantTrivia())
+            var descendantTrivia = root.DescendantTrivia()
+                .Where(x =>
+                    x.IsKind(SyntaxKind.PragmaWarningDirectiveTrivia) ||
+                    x.IsKind(SyntaxKind.MultiLineCommentTrivia) ||
+                    x.IsKind(SyntaxKind.SingleLineCommentTrivia))
+                .ToArray();               
+
+            foreach (var trivia in descendantTrivia)
             {
                 if (trivia.GetStructure() is not PragmaWarningDirectiveTriviaSyntax pragma)
                     continue;
 
                 //  Only "#pragma warning disable ...."
-                if (!pragma.DisableOrRestoreKeyword.IsKind(SyntaxKind.DisableKeyword))
+                if (!pragma.IsKind(SyntaxKind.PragmaWarningDirectiveTrivia) || !pragma.DisableOrRestoreKeyword.IsKind(SyntaxKind.DisableKeyword))
                     continue;
 
                 // Do not report for global disables and for the disable of this analyzer
-                var errorCodes = pragma.ErrorCodes.Select(x => x.ToFullString()).ToArray();
+                var errorCodes = pragma.ErrorCodes
+                    .Select(x =>
+                    {
+                        if (x is IdentifierNameSyntax identifier)
+                            return identifier.Identifier.Text;
+                        return x.ToFullString();
+                    })
+                    .ToArray();
                 if (errorCodes.Length == 0 || errorCodes.Contains(AnalyzerIdentifiers.SuppressionJustificationAnalyzer))
                     continue;
 
                 // Check whether this pragma has a justification.
-                var trailingTrivia = pragma.ErrorCodes.LastOrDefault()?.GetTrailingTrivia() ?? pragma.DisableOrRestoreKeyword.TrailingTrivia;
+                int pragmaLine = pragma.GetLocation().GetLineSpan().StartLinePosition.Line;
+                var commentTrivia = descendantTrivia.AsEnumerable().Reverse()
+                    .Where(x =>
+                        x.IsKind(SyntaxKind.MultiLineCommentTrivia) ||
+                        x.IsKind(SyntaxKind.SingleLineCommentTrivia))
+                    .Where(t => t.Span.End <= pragma.SpanStart)
+                    .FirstOrDefault();
+                int? commentTriviaLine = commentTrivia.IsKind(SyntaxKind.None)
+                    ? null
+                    : commentTrivia.GetLocation().GetLineSpan().EndLinePosition.Line;
 
-                var comment = trailingTrivia.FirstOrDefault(t => t.IsKind(SyntaxKind.SingleLineCommentTrivia));
+                // Comment must me exactly the line above the pragma
+                var comment = pragmaLine - 1 == commentTriviaLine
+                    ? commentTrivia
+                    : default;
                 var text = comment.ToFullString();
                 var justification = text
                     .TrimStart()

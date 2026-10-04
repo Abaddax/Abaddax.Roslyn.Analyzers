@@ -323,7 +323,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 );
         }
         [Test]
-        public async Task ShouldSuggestAsyncOverloadIfAdditionalCancallationTokenParameter()
+        public async Task ShouldSuggestAsyncOverloadIfAdditionalCancellationTokenParameter()
         {
             var source =
                 """
@@ -346,7 +346,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                         {
                             return 1;
                         }
-                        public Task<int> FuncAsync(string x, CancellationToken cancalltionToken)
+                        public Task<int> FuncAsync(string x, CancellationToken cancellationToken)
                         {
                             return Task.FromResult(1);
                         }
@@ -419,7 +419,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
             await VerifyAnalyzerAsync(source);
         }
         [Test]
-        public async Task ShouldNotSuggestAsyncOverloadWithImcompatibleParameters()
+        public async Task ShouldNotSuggestAsyncOverloadWithIncompatibleParameters()
         {
             var source =
                 """

@@ -16,6 +16,13 @@
     <File Path="docs/Analyzers/ABX0007.md" />
     <File Path="docs/Analyzers/ABX0008.md" />
   </Folder>
+  <Folder Name="/Solution items/docs/Suppressors/">
+    <File Path="docs/Suppressors/ABX1001.md" />
+    <File Path="docs/Suppressors/ABX1002.md" />
+    <File Path="docs/Suppressors/ABX1003.md" />
+    <File Path="docs/Suppressors/ABX1004.md" />
+    <File Path="docs/Suppressors/ABX1005.md" />
+  </Folder>
   <Folder Name="/Solution items/workflows/">
     <File Path=".github/workflows/ci.yml" />
     <File Path=".github/workflows/publish.nuget.yml" />

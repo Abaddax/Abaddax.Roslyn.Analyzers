@@ -6,11 +6,11 @@
 
 ## Installation
 
-Install the NuGet package [Abaddax.Roslyn.Analyzers](https://www.nuget.org/packages/Abaddax.Roslyn.Analyzers/)
+Install the NuGet package [Abaddax.Roslyn.Analyzers](https://www.nuget.org/packages/Abaddax.Roslyn.Analyzers/).
 
 # Analyzers
 
-You can find a list of all the analyzers [here](./docs/README.md)
+You can find a list of all the analyzers in [docs](./docs/README.md).
 
 # Remarks
 

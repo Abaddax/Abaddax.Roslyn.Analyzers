@@ -28,7 +28,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 """
                 namespace TestNamespace
                 {
-                {|#0:#pragma warning disable ABC123|}
+                {|#0:#pragma warning disable ABC123 // Wrong place for a justification|}
                     public class Test;
                 }
                 """;
@@ -46,7 +46,8 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 """
                 namespace TestNamespace
                 {
-                #pragma warning disable ABC123 // Because this is a test
+                // Because this is a test
+                #pragma warning disable ABC123 
                 #pragma warning disable
                     public class Test;
                 }

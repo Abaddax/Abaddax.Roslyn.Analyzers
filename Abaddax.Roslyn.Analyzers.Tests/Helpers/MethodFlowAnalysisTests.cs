@@ -1017,7 +1017,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
 
         [Test]
         [Category(nameof(MethodFlowAnalysis.TraverseAssignments))]
-        public void ShouldTraverseLamdaAssignmentResult()
+        public void ShouldTraverseLambdaAssignmentResult()
         {
             var operation = Process<IOperation>(
               """
@@ -1052,7 +1052,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.TraverseAssignments))]
-        public void ShouldTraverseAssignmentInsideLamda()
+        public void ShouldTraverseAssignmentInsideLambda()
         {
             var operation = Process<IOperation>(
               """
@@ -1119,7 +1119,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.TraverseAssignments))]
-        public void ShouldTraverseAssignmentInsideLinqLamda()
+        public void ShouldTraverseAssignmentInsideLinqLambda()
         {
             var operation = Process<IOperation>(
               """
@@ -1147,7 +1147,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.TraverseAssignments))]
-        public void ShouldTraverseAssignmentInsideCustomMarkedLamda()
+        public void ShouldTraverseAssignmentInsideCustomMarkedLambda()
         {
             var operation = Process<IOperation>(
               """
@@ -1163,9 +1163,9 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
                         var x = new int[10];
                         var y = Custom(x, x => [|x|] > 5);
                     }
-                    bool Custom(int[] nums, [ForwardedParameterAttribute(nameof(nums), null)] Func<int, bool> selector)
+                    bool Custom(int[] numbers, [ForwardedParameterAttribute(nameof(numbers), null)] Func<int, bool> selector)
                     {
-                        return selector(nums[0]);
+                        return selector(numbers[0]);
                     }
                 }
                 """,

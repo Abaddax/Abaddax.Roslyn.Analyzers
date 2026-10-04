@@ -11,5 +11,5 @@ ABX0004 | AsyncUsage  | Warning  | [EfCorePreferAsyncCallAnalyzer](./Analyzers/E
 ABX0005 | Style       | Info     | [EfCoreExplicitTrackingAnalyzer](./Analyzers/EfCoreExplicitTrackingAnalyzer.cs)
 ABX0006 | Reliability | Error    | [UnconditionalSelfRecursionAnalyzer](./Analyzers/UnconditionalSelfRecursionAnalyzer.cs)
 ABX0007 | Style       | Info     | [EfCoreThenIncludeFormattingAnalyzer](./Analyzers/EfCoreThenIncludeFormattingAnalyzer.cs)
-ABX0008 | Usage       | Warning  | [EfCoreThenIncludeFormattingAnalyzer](./Analyzers/EfCoreThenIncludeFormattingAnalyzer.cs)
+ABX0008 | Usage       | Warning  | [SuppressionJustificationAnalyzer](./Analyzers/SuppressionJustificationAnalyzer.cs)
 

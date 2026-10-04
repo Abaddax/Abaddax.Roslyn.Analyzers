@@ -244,7 +244,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
-        public void ShouldExpandLamdaLocalFunctionAssignments()
+        public void ShouldExpandLambdaLocalFunctionAssignments()
         {
             var result = ProcessOrigin(
                 """
@@ -354,7 +354,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
-        public void ShouldExpandForwardingLamdaFunctionAssignments()
+        public void ShouldExpandForwardingLambdaFunctionAssignments()
         {
             var result = ProcessOrigin(
                 """
