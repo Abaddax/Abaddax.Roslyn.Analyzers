@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using NUnit.Framework;
+using System.Diagnostics.CodeAnalysis;
 using MethodFlowAnalysis = Abaddax.Roslyn.Analyzers.Helper.MethodFlowAnalysis;
 
 namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
@@ -18,20 +19,14 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             }
         }
 
-        private TOperation Process<TOperation>(string source,
+        private TOperation Process<TOperation>([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
             out SemanticModel semanticModel)
             where TOperation : class, IOperation
         {
-            Parse(source,
-                out semanticModel,
-                out var syntaxNode);
+            var syntaxNode = Parse(source,
+                out semanticModel);
 
-            var expression = syntaxNode as ExpressionSyntax;
-            Assert.That(expression, Is.Not.Null);
-
-            var operation = semanticModel.GetOperation(
-              syntaxNode) as TOperation;
-
+            var operation = semanticModel.GetOperation(syntaxNode) as TOperation;
             Assert.That(operation, Is.Not.Null);
 
             return operation;
@@ -1014,6 +1009,115 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
 
             Assert.That(possibleLastAssignments, Has.Length.EqualTo(0));
         }
+        [Test]
+        [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]
+        public void ShouldFindLastIfSameInstanceAssignment()
+        {
+            var operation = Process<IOperation>(
+                """
+                public class Container
+                {
+                    public int X { get; set; }
+                }
+                public class Test
+                {
+                    public void Func()
+                    {
+                        var container = new Container()
+                        {
+                            X = 1
+                        };
+                        var x = container;
+                        var y = container;
+                        y.X = 2;
+                        [|x.X|].ToString();
+                    }
+                }
+                """,
+                out var semanticModel);
+
+            var possibleLastAssignments = MethodFlowAnalysis.GetPossibleLastAssignment(
+                operation,
+                semanticModel,
+                default)
+                .ToArray();
+
+            Assert.That(possibleLastAssignments, Has.Length.EqualTo(1));
+            Assert.That(possibleLastAssignments[0].Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+        }
+        [Test]
+        [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]
+        public void ShouldNotFindLastIfUnrelatedInstanceAssignment()
+        {
+            var operation = Process<IOperation>(
+                """
+                public class Container
+                {
+                    public int X { get; set; }
+                }
+                public class Test
+                {
+                    public void Func()
+                    {
+                        var container = new Container()
+                        {
+                            X = 1
+                        };
+                        var x = container;
+                        var y = new Container();
+                        y.X = 2;
+                        x.X = 3;
+                        [|y.X|].ToString();
+                    }
+                }
+                """,
+                out var semanticModel);
+
+            var possibleLastAssignments = MethodFlowAnalysis.GetPossibleLastAssignment(
+                operation,
+                semanticModel,
+                default)
+                .ToArray();
+
+            Assert.That(possibleLastAssignments, Has.Length.EqualTo(1));
+            Assert.That(possibleLastAssignments[0].Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+        }
+        [Test]
+        [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]
+        public void ShouldNotFindLastIfInstanceReplacement()
+        {
+            var operation = Process<IOperation>(
+                """
+                public class Container
+                {
+                    public int X { get; set; }
+                }
+                public class Test
+                {
+                    public void Func()
+                    {
+                        var container = new Container()
+                        {
+                            X = 1
+                        };
+                        var x = container;
+                        x.X = 2;
+                        x = new Container();
+                        [|x.X|].ToString();
+                    }
+                }
+                """,
+                out var semanticModel);
+
+            var possibleLastAssignments = MethodFlowAnalysis.GetPossibleLastAssignment(
+                operation,
+                semanticModel,
+                default)
+                .ToArray();
+
+            Assert.That(possibleLastAssignments, Has.Length.EqualTo(0));
+        }
+
 
         [Test]
         [Category(nameof(MethodFlowAnalysis.TraverseAssignments))]
@@ -1131,7 +1235,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
                     public void Func()
                     {
                         var x = new int[10];
-                        var y = x.Where(x => [|x|] > 5);
+                        var y = x.Where(z => [|z|] > 5);
                     }
                 }
                 """,

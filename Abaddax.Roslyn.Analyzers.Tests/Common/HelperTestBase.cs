@@ -1,7 +1,9 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.CodeAnalysis.Text;
 using NUnit.Framework;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Abaddax.Roslyn.Analyzers.Tests.Common
@@ -29,12 +31,19 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Common
             }
         }
 
-        public void Parse([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
+        public SyntaxNode Parse([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
             out SemanticModel semanticModel,
-            out SyntaxNode syntaxNode,
             int index = 0)
         {
-            TestFileMarkupParser.GetSpan(source, out var output, out var span);
+            return ParseMultiple(source,
+                out semanticModel)[index];
+        }
+        public SyntaxNode[] ParseMultiple([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
+            out SemanticModel semanticModel)
+        {
+            TestFileMarkupParser.GetSpans(source,
+                out var output,
+                out ImmutableArray<TextSpan> spans);
 
             var tree = CSharpSyntaxTree.ParseText(output);
 
@@ -45,8 +54,8 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Common
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
 
             semanticModel = compilation.GetSemanticModel(tree);
-            syntaxNode = tree.GetRoot().FindNode(span);
 
+            // Check for errors
             var diagnostics = semanticModel.GetDiagnostics();
             using (Assert.EnterMultipleScope())
             {
@@ -55,6 +64,9 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Common
                     Assert.Fail(error.ToString());
                 }
             }
+
+            return spans.Select(span => tree.GetRoot().FindNode(span))
+                .ToArray();
         }
     }
 }

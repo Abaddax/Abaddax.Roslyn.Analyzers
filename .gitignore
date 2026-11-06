@@ -488,3 +488,7 @@ $RECYCLE.BIN/
 /Abaddax.Roslyn.Analyzers.Tests/.editorconfig
 # Added by Abaddax.Build.Common
 /Abaddax.Roslyn.Analyzers.Attributes/.editorconfig
+# Added by Abaddax.Build.Common
+/Abaddax.Roslyn.Analyzers.Framework/.editorconfig
+# Added by Abaddax.Build.Common
+/Abaddax.Roslyn.Analyzers.Framework.Tests/.editorconfig

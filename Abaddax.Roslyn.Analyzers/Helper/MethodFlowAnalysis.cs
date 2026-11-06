@@ -1098,7 +1098,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         yield break;
 
                     // Shortcut for known LINQ methods
-                    var linqParameter = LinqTraversalHelper.GetForwardedParameter(parentInvocation, argument, paramIndex);
+                    var linqParameter = LambdaTraversalHelper.GetForwardedParameter(parentInvocation, argument, paramIndex);
                     if (linqParameter != null)
                     {
                         yield return (linqParameter, null);

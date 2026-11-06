@@ -1,17 +1,16 @@
 using Abaddax.Roslyn.Analyzers.Tests.Common;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NUnit.Framework;
+using System.Diagnostics.CodeAnalysis;
 using ExpressionSyntaxHelper = Abaddax.Roslyn.Analyzers.Helper.ExpressionSyntaxHelper;
 
 namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
 {
     public sealed class ExpressionSyntaxHelperTests : HelperTestBase
     {
-        private ExpressionSyntax Process(string source)
+        private ExpressionSyntax Process([StringSyntax(StringSyntaxHelper.CSharpTest)] string source)
         {
-            Parse(source,
-                out var semanticModel,
-                out var syntaxNode);
+            var syntaxNode = Parse(source, out var semanticModel);
 
             var expression = syntaxNode as ExpressionSyntax;
             Assert.That(expression, Is.Not.Null);
@@ -21,11 +20,9 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
                  semanticModel,
                  default);
         }
-        private ExpressionSyntaxHelper.ExpressionOrigin? ProcessOrigin(string source)
+        private ExpressionSyntaxHelper.ExpressionOrigin? ProcessOrigin([StringSyntax(StringSyntaxHelper.CSharpTest)] string source)
         {
-            Parse(source,
-                out var semanticModel,
-                out var syntaxNode);
+            var syntaxNode = Parse(source, out var semanticModel);
 
             var expression = syntaxNode as ExpressionSyntax;
             Assert.That(expression, Is.Not.Null);
@@ -37,6 +34,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
         }
 
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TraverseAssignments))]
         public void ShouldTraverseAssignment()
         {
             var result = Process(
@@ -61,6 +59,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
         //TODO:  ShouldTraverseAssignmentIfLoop -> How should it behave correctly?
 
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TraverseAssignments))]
         public void ShouldTraverseAssignmentIfForeach()
         {
             var result = Process(
@@ -77,8 +76,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
                         {
                             y = i;
                             [|y|].ToString();
-                        }
-                       
+                        }                       
                     }
                 }
                 """);
@@ -86,8 +84,8 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result, Is.Not.Null);
             Assert.That(result.ToFullString(), Is.EqualTo("new int[10]").IgnoreWhiteSpace);
         }
-
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TraverseAssignments))]
         public void ShouldTraverseAssignmentField()
         {
             var result = Process(
@@ -110,7 +108,9 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result, Is.Not.Null);
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
+        [Category(nameof(ExpressionSyntaxHelper.TraverseAssignments))]
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TraverseAssignments))]
         public void ShouldTraverseAssignmentProperty()
         {
             var result = Process(
@@ -134,6 +134,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TraverseAssignments))]
         public void ShouldTraverseAssignmentPropertyCtor()
         {
             var result = Process(
@@ -161,6 +162,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
 
 
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TryExpand))]
         public void ShouldExpand()
         {
             var result = ProcessOrigin(
@@ -186,6 +188,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TryExpand))]
         public void ShouldExpandTask()
         {
             var result = ProcessOrigin(
@@ -213,6 +216,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("await Task.FromResult(1)").IgnoreWhiteSpace);
         }
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TryExpand))]
         public void ShouldExpandLocalFunctionAssignments()
         {
             var result = ProcessOrigin(
@@ -244,6 +248,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TryExpand))]
         public void ShouldExpandLambdaLocalFunctionAssignments()
         {
             var result = ProcessOrigin(
@@ -266,6 +271,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TryExpand))]
         public void ShouldExpandLocalFunctionOutAssignments()
         {
             var result = ProcessOrigin(
@@ -300,6 +306,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
         }
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TryExpand))]
         public void ShouldExpandLocalFunctionOutDeclarations()
         {
             var result = ProcessOrigin(
@@ -327,6 +334,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TryExpand))]
         public void ShouldExpandForwardingLocalFunctionAssignments()
         {
             var result = ProcessOrigin(
@@ -354,6 +362,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TryExpand))]
         public void ShouldExpandForwardingLambdaFunctionAssignments()
         {
             var result = ProcessOrigin(
@@ -382,6 +391,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Helpers
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
         [Test]
+        [Category(nameof(ExpressionSyntaxHelper.TryExpand))]
         public void ShouldNotExpandOutsideCurrentFunction()
         {
             var result = ProcessOrigin(

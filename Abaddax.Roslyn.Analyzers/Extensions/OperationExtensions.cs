@@ -71,6 +71,19 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
             }
         }
 
+        public static TOperation? FindParent<TOperation>(this IOperation operation)
+            where TOperation : class, IOperation
+        {
+            IOperation? current = operation;
+            while (current != null)
+            {
+                if (current is TOperation parent)
+                    return parent;
+                current = current.Parent;
+            }
+            return null;
+        }
+
         public static (IOperation Target, IOperation Value)? FindAssignmentTarget(this IOperation operation, ISymbol targetSymbol)
         {
             // Unwrap the assignment if it's inside a statement
