@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
 {
-    internal static class MethodFlowAnalysis
+    public static class MethodFlowAnalysis
     {
         private const int _MaxCallStackDepth = 10;
 
@@ -89,7 +89,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
         /// <summary>
         /// Internal resolver for <see cref="GetPossibleReturnValues(IInvocationOperation, SemanticModel, CancellationToken)"/>
         /// </summary>
-        /// <remarks>Also traversed local function</remarks>
+        /// <remarks>Also traverses local function</remarks>
         private static IEnumerable<IOperation> GetPossibleReturnValuesInternal(
             IInvocationOperation invocation,
             SemanticModel semanticModel,
@@ -209,7 +209,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
         /// <summary>
         /// Internal resolver for <see cref="GetPossibleOutParameterValues(IInvocationOperation, IArgumentOperation, SemanticModel, CancellationToken)"/>
         /// </summary>
-        /// <remarks>Also traversed local function</remarks>
+        /// <remarks>Also traverses local function</remarks>
         private static IEnumerable<IOperation> GetPossibleOutParameterValuesInternal(
             IInvocationOperation invocation,
             IArgumentOperation outArgument,
@@ -343,7 +343,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
         /// <summary>
         /// Internal resolver for <see cref="GetPossibleLastAssignment(IOperation, SemanticModel, CancellationToken)"/>
         /// </summary>
-        /// <remarks>Also traversed local function</remarks>
+        /// <remarks>Also traverses local function</remarks>
         private static IEnumerable<IOperation> GetPossibleLastAssignmentInternal(
             IOperation variable,
             SemanticModel semanticModel,

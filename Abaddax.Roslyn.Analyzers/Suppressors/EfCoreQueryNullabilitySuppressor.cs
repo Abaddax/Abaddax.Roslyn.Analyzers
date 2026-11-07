@@ -1,11 +1,11 @@
 using Abaddax.Roslyn.Analyzers.Extensions;
-using Abaddax.Roslyn.Analyzers.Helper;
+using Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin;
+using Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 using System.Collections.Immutable;
-using static Abaddax.Roslyn.Analyzers.Helper.ExpressionSyntaxHelper;
 
 namespace Abaddax.Roslyn.Analyzers.Suppressors
 {
@@ -130,7 +130,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
                 return true;
 
             // Expand the caller chain and check if the query originates from a DbContext.DbSet<T>
-            var origin = ExpressionSyntaxHelper.TryExpand(queryInvocation, semanticModel, cancellationToken);
+            var origin = ExpressionOriginAnalysis.TryExpand(queryInvocation, semanticModel, cancellationToken);
             bool dbSetFound = false;
             while (origin is not SyntaxExpressionOrigin)
             {
@@ -197,7 +197,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
                 return false;
 
             // Find where the variable comes from
-            var origin = ExpressionSyntaxHelper.TryExpand(lambdaExpression, semanticModel, cancellationToken);
+            var origin = ExpressionOriginAnalysis.TryExpand(lambdaExpression, semanticModel, cancellationToken);
             while (origin is not SyntaxExpressionOrigin)
             {
                 switch (origin)

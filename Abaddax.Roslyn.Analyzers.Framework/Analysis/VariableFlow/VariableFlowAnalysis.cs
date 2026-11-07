@@ -75,7 +75,10 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             }
         }
 
-
+        #region Internal
+        /// <summary>
+        /// Internal resolver for <see cref="RunAnalysis(IMethodSymbol, ControlFlowGraph, SemanticModel, IReadOnlyDictionary{IParameterSymbol, ParameterValue}?, CancellationToken)"/>
+        /// </summary>
         private static VariableFlowState? RunAnalysisInternal(
             IMethodSymbol methodSymbol,
             VariableFlowAnalysisContext analysisContext,
@@ -185,13 +188,14 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
                 // Assignment to new value
                 case IObjectCreationOperation: //x = new MyClass();
                 case IArrayCreationOperation: //x = new int[10];
-                case IArrayElementReferenceOperation: //x = arr[0];
                 case IDelegateCreationOperation: //x = Func;
                 case ILiteralOperation: //x = 1;
                 case IDefaultValueOperation: //x = default;
                 case ICollectionExpressionOperation: //x = [1,2,3];
                 case IOperation { Syntax: StackAllocArrayCreationExpressionSyntax }: //x = stackalloc new int[10];
                 case IBinaryOperation: //x = a + b;
+                case IOperation arrayOperation
+                    when arrayOperation.FindChilds<IArrayElementReferenceOperation>().Any(): //x = arr[0]; x = arr[0].X;
                 case ICaughtExceptionOperation: // catch(Exception ex)
                 {
                     var creation = value.IgnoreCasts();
@@ -261,7 +265,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             out IEnumerable<AccessPath> pathsWritten)
         {
             //Ignore array index assignments as we can not track them
-            if (assign.Target.IgnoreCasts() is IArrayElementReferenceOperation)
+            if (assign.Target.FindChilds<IArrayElementReferenceOperation>().Any())
             {
                 pathsWritten = [];
                 return state;
@@ -546,6 +550,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             }
             return state;
         }
-
+        #endregion
     }
 }

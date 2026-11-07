@@ -71,9 +71,11 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
             }
         }
 
-        public static TOperation? FindParent<TOperation>(this IOperation operation)
+        public static TOperation? FindParent<TOperation>(this IOperation operation, bool includeSelf = true)
             where TOperation : class, IOperation
         {
+            if (operation is TOperation self && includeSelf)
+                return self;
             IOperation? current = operation;
             while (current != null)
             {
@@ -82,6 +84,17 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
                 current = current.Parent;
             }
             return null;
+        }
+        public static IEnumerable<TOperation> FindChilds<TOperation>(this IOperation operation, bool includeSelf = true)
+             where TOperation : class, IOperation
+        {
+            if (operation is TOperation self && includeSelf)
+                yield return self;
+            foreach (var child in operation.ChildOperations)
+            {
+                foreach (var foundChild in child.FindChilds<TOperation>())
+                    yield return foundChild;
+            }
         }
 
         public static (IOperation Target, IOperation Value)? FindAssignmentTarget(this IOperation operation, ISymbol targetSymbol)

@@ -4,7 +4,6 @@ using Abaddax.Roslyn.Analyzers.Framework.Extensions;
 using Abaddax.Roslyn.Analyzers.Framework.Tests.Common;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.FlowAnalysis;
 using NUnit.Framework;
 using System.Diagnostics.CodeAnalysis;
 
@@ -2102,6 +2101,12 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
 
                 public class Test
                 {
+                    class Nested
+                    {
+                        public int X { get; set; }
+                        public int Y { get; set; }
+                        public Nested N { get; set; }
+                    }
                     public int AllCombined(
                         int regularParam,
                         ref int refParam,
@@ -2134,6 +2139,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                         // 3. Collection Expressions & Spreads (C# 12+)
                         int[] firstList = [1, 2];
                         int[] combinedList = [.. firstList, 3, 4, .. stackAllocSpan];
+                        int[,] multiDimensional = new int[3, 3];
 
                         // 4. Arithmetic, Bitwise, Logical, and Null-Coalescing Operators
                         int mathResult = +explicitLocal - constLocal * 2 / 1 % 3;
@@ -2149,6 +2155,13 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                         int lastElement = rangeTest[^1];
                         var subRange = rangeTest[1..3];
                         rangeTest[0] = 1;
+                        multiDimensional[0,1] = multiDimensional[2,0];
+                        var nestedArray = new Nested[3];
+                        nestedArray[0].Y = nestedArray[1].X;
+                        var nestedArrayElement = nestedArray[^1].N.X;
+                        Dictionary<string, string> dict = new Dictionary<string, string>();
+                        dict["x"] = "X";
+                        var dictElement = dict["x"];
 
                         // 6. Using Declarations and Lock Statements
                         using var disposableResource = new System.IO.MemoryStream();

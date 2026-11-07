@@ -1,4 +1,6 @@
 using Abaddax.Roslyn.Analyzers.Extensions;
+using Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin;
+using Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin.Models;
 using Abaddax.Roslyn.Analyzers.Helper;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -6,7 +8,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 using System.Collections.Immutable;
-using static Abaddax.Roslyn.Analyzers.Helper.ExpressionSyntaxHelper;
 
 namespace Abaddax.Roslyn.Analyzers.Suppressors
 {
@@ -67,7 +68,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
             // Unwrap variable assignments
             if (node is IdentifierNameSyntax identifier)
             {
-                node = TraverseAssignments(identifier, semanticModel, context.CancellationToken);
+                node = ExpressionOriginAnalysis.TraverseAssignments(identifier, semanticModel, context.CancellationToken);
             }
             // Unwrap awaits
             if (node is AwaitExpressionSyntax asyncAccess)
@@ -82,7 +83,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
                 if (symbol is IPropertySymbol propertySymbol &&
                     HasMaybeNullAttribute(propertySymbol))
                 {
-                    var origin = TryExpand(memberAccess, semanticModel, context.CancellationToken,
+                    var origin = ExpressionOriginAnalysis.TryExpand(memberAccess, semanticModel, context.CancellationToken,
                         onTraverseCallback: TraverseCallback);
                     if (origin == null)
                         return;
@@ -104,7 +105,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
                 // Check if the select points to property with [MaybeNull] attribute
                 if (IsMaybeNullPropertySelection(invocation, semanticModel, context.CancellationToken))
                 {
-                    var origin = TryExpand(invocation, semanticModel, context.CancellationToken,
+                    var origin = ExpressionOriginAnalysis.TryExpand(invocation, semanticModel, context.CancellationToken,
                         onTraverseCallback: TraverseCallback);
                     if (origin == null)
                         return;

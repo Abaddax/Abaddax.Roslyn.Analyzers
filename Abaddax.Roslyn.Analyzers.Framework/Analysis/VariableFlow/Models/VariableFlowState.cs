@@ -51,32 +51,12 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
             var value = ProgramStateExtensions.EvaluatePath(ref state, accessPath.Value);
             if (value == null)
                 yield break;
-            switch (value)
+            foreach (var possibleValue in ProgramStateExtensions.GetPossibleLastValues(value))
             {
-                case ValueTypeValue valVal:
-                {
-                    foreach (var possibleValue in valVal.PossibleValues)
-                    {
-                        // Do not return itself
-                        if (!OperationEqualityComparer.Default.Equals(possibleValue, operation))
-                            yield return possibleValue;
-                    }
-                    yield break;
-                }
-                case ReferenceTypeValue refVal:
-                {
-                    foreach (var node in refVal.Targets.Nodes)
-                    {
-                        // Do not return itself
-                        if (!OperationEqualityComparer.Default.Equals(node.AllocationOperation, operation))
-                            yield return node.AllocationOperation;
-                    }
-                    yield break;
-                }
-                default:
-                    yield break;
+                // Do not return itself
+                if (!OperationEqualityComparer.Default.Equals(possibleValue, operation))
+                    yield return possibleValue;
             }
-
         }
     }
 }

@@ -76,7 +76,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
             return syntaxMatchCandidates.ExactlyOneOrDefault();
         }
 
-
+        /// <summary>
+        /// Traverses the all reachable block in the given <paramref name="cfg"/>
+        /// </summary>
         public static IEnumerable<BasicBlock> TraverseCfg(this ControlFlowGraph cfg,
             IReadOnlyDictionary<IParameterSymbol, ParameterValue>? knownArguments = null,
             CancellationToken cancellationToken = default)
@@ -263,7 +265,12 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
             }
         }
 
-
+        /// <summary>
+        /// Get all operations in the <paramref name="basicBlock"/>
+        /// </summary>
+        /// <remarks>
+        /// Including branch-values
+        /// </remarks>
         public static IEnumerable<IOperation> GetOperations(this BasicBlock basicBlock)
         {
             foreach (var operation in basicBlock.Operations)
@@ -271,6 +278,12 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
             if (basicBlock.BranchValue != null)
                 yield return basicBlock.BranchValue;
         }
+        /// <summary>
+        /// Get all predecessors leading to the current <paramref name="basicBlock"/>
+        /// </summary>
+        /// <remarks>
+        /// Also includes try/catch/finally blocks
+        /// </remarks>
         public static IEnumerable<BasicBlock> GetPredecessors(this BasicBlock basicBlock, ControlFlowGraph cfg)
         {
             foreach (var predecessor in basicBlock.Predecessors)
@@ -306,6 +319,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
             }
         }
 
+        #region Traversal Helper
         private static IEnumerable<BasicBlock> GetBasicBlocks(this ControlFlowRegion? region, ControlFlowGraph cfg)
         {
             if (region == null)
@@ -313,7 +327,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
             for (int blockOrdinal = region.FirstBlockOrdinal; blockOrdinal <= region.LastBlockOrdinal; blockOrdinal++)
                 yield return cfg.Blocks[blockOrdinal];
         }
-
         private static void GetTryCatchFinallyRegion(this ControlFlowRegion region,
             out ControlFlowRegion? tryRegion,
             out ControlFlowRegion[] catchRegions,
@@ -439,5 +452,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
                 }
             }
         }
+        #endregion
     }
 }

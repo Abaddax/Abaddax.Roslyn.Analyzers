@@ -1,5 +1,6 @@
 using Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models;
 using Abaddax.Roslyn.Analyzers.Framework.Extensions;
+using Abaddax.Roslyn.Analyzers.Framework.Helper;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -216,12 +217,20 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Extensions
                 IAbstractValue accumulated = ReferenceTypeValue.Empty;
                 foreach (var site in refVal.Targets.Nodes)
                 {
-                    //For invocations always allocate a new reference and do not share existing references!!
-                    if (member is { Symbol: IMethodSymbol })
-                        goto ALLOCATE_NEW;
                     if (state.HeapStore.TryGetValue(site, out var heapNode) &&
                         heapNode.TryGetField(member) is IAbstractValue fieldVal)
                     {
+                        //For invocations allocate a new reference and do not share existing references!!
+                        if (member is { Symbol: IMethodSymbol })
+                        {
+                            if (member.AccessOperation == null)
+                                goto ALLOCATE_NEW;
+                            var knowAllocation = GetPossibleLastValues(fieldVal).ExactlyOneOrDefault();
+                            if (!OperationEqualityComparer.Default.Equals(knowAllocation, member.AccessOperation))
+                                goto ALLOCATE_NEW;
+                            //We already allocated the exact same invocation operation
+                            //Is this and only this case we can reuse the existing reference, because it comes from the excact same incovation
+                        }
                         accumulated = accumulated.Merge(fieldVal);
                         continue;
                     }
@@ -257,6 +266,34 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Extensions
                 if (memberType == null)
                     return ReferenceTypeValue.Empty;
                 return AllocateDefaultValueForType(ref state, memberType, member.AccessOperation);
+            }
+        }
+
+        /// <summary>
+        /// Returns the stored possible values of the given <paramref name="value"/>
+        /// </summary>
+        public static IEnumerable<IOperation?> GetPossibleLastValues(IAbstractValue value)
+        {
+            switch (value)
+            {
+                case ValueTypeValue valVal:
+                {
+                    foreach (var possibleValue in valVal.PossibleValues)
+                    {
+                        yield return possibleValue;
+                    }
+                    yield break;
+                }
+                case ReferenceTypeValue refVal:
+                {
+                    foreach (var node in refVal.Targets.Nodes)
+                    {
+                        yield return node.AllocationOperation;
+                    }
+                    yield break;
+                }
+                default:
+                    yield break;
             }
         }
 

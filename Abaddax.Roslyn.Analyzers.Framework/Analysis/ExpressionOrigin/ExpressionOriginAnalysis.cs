@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin
 {
-    internal static class ExpressionOriginAnalysis
+    public static class ExpressionOriginAnalysis
     {
         /// <summary>
         /// Tries to unwrap forward variable declarations and assignments back to the last conclusive assignment
