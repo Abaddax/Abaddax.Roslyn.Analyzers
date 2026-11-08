@@ -334,9 +334,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             state = TraverseLocalFunction(analysisContext, state, invocation, cancellationToken);
 
             // Invalidated passed arguments
-            foreach (var argument in invocation.Arguments.Except(outParams)
-                .Where(x => x.Parameter?.GetAttributes("PureAttribute", "System.Diagnostics.Contracts").Any() != true)
-                .Where(x => x.Parameter?.RefKind is not (RefKind.In or RefKind.RefReadOnly or RefKind.RefReadOnlyParameter)))
+            foreach (var argument in invocation.Arguments.Except(outParams).Where(x => !x.IsConstLikeArgument()))
             {
                 state = InvalidateAccessPath(state, argument, argumentPathsWritten[argument]);
             }

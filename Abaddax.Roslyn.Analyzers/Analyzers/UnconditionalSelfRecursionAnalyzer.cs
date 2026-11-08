@@ -1,4 +1,4 @@
-using Abaddax.Roslyn.Analyzers.Extensions;
+using Abaddax.Roslyn.Analyzers.Framework.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.FlowAnalysis;

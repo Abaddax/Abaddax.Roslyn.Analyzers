@@ -1,6 +1,7 @@
 using Abaddax.Roslyn.Analyzers.Extensions;
 using Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin;
 using Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin.Models;
+using Abaddax.Roslyn.Analyzers.Framework.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
