@@ -243,8 +243,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
             IReadOnlyDictionary<IParameterSymbol, ParameterValue>? outerArguments,
             HashSet<IMethodSymbol> callStack,
             ushort maxCallStackDepth,
-            CancellationToken cancellationToken,
-            bool isForwardedParam = false)
+            CancellationToken cancellationToken)
         {
             if (variable.Syntax is not ExpressionSyntax expression)
                 yield break;
@@ -306,8 +305,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
             Stack<TraversalStackInfo> callStackInfo,
             ushort maxCallStackDepth,
             TraverseCallback? onTraverseCallback,
-            CancellationToken cancellationToken,
-            bool isForwardedParam = false)
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -428,10 +426,8 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
             }
             else
             {
-                var lastAssignments = GetPossibleLastAssignmentInternal(operation, semanticModel, cfg, outerArguments, callStack, maxCallStackDepth, cancellationToken,
-                    isForwardedParam: isForwardedParam);
+                var lastAssignments = GetPossibleLastAssignmentInternal(operation, semanticModel, cfg, outerArguments, callStack, maxCallStackDepth, cancellationToken);
                 var lastAssignment = lastAssignments.ExactlyOneOrDefault();
-                isForwardedParam = false;
                 if (lastAssignment == null)
                 {
                     // We hit an end, possibly a parameter reference? If so check if we can move up into the caller (if we are currently inside a local function/delegate)
@@ -471,10 +467,8 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
                     }
 
                     lastAssignment = possibleCallingOperation.CallerParamRef;
-                    isForwardedParam = possibleCallingOperation.IsForwardedParam;
                 }
-                return TraverseAssignmentsInternal(lastAssignment, semanticModel, cfg, outerArguments, callStack, callStackInfo, maxCallStackDepth, onTraverseCallback, cancellationToken,
-                    isForwardedParam: isForwardedParam);
+                return TraverseAssignmentsInternal(lastAssignment, semanticModel, cfg, outerArguments, callStack, callStackInfo, maxCallStackDepth, onTraverseCallback, cancellationToken);
             }
         }
 
