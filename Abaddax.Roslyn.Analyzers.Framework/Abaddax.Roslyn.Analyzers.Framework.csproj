@@ -3,9 +3,10 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <IsPackable>false</IsPackable>
     <RootNamespace>Abaddax.Roslyn.Analyzers.Framework</RootNamespace>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <PackageId>Abaddax.Roslyn.Analyzers.Framework</PackageId>
+    <PackageTags>Abaddax.Roslyn.Analyzers, analyzers</PackageTags>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(Configuration)=='Debug'">
