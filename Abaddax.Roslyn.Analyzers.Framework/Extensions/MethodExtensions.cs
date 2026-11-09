@@ -1,9 +1,9 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Abaddax.Roslyn.Analyzers.Extensions
+namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
 {
-    internal static class MethodExtensions
+    public static class MethodExtensions
     {
         public static bool IsEntryPoint(this IMethodSymbol method, SyntaxNodeAnalysisContext context)
         {

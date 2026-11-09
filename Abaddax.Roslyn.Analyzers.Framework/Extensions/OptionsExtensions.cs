@@ -1,9 +1,9 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Abaddax.Roslyn.Analyzers.Extensions
+namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
 {
-    internal static class OptionsExtensions
+    public static class OptionsExtensions
     {
         public static AnalyzerConfigOptions GetGlobalOptions(this AnalyzerOptions options, SyntaxTree sourceTree)
         {

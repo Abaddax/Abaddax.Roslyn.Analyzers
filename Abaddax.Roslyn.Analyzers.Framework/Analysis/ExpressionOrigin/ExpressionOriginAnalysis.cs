@@ -1,86 +1,15 @@
-using Abaddax.Roslyn.Analyzers.Extensions;
+using Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin.Models;
+using Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow;
+using Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow.Models;
+using Abaddax.Roslyn.Analyzers.Framework.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Diagnostics;
-using static Abaddax.Roslyn.Analyzers.Helper.MethodFlowAnalysis;
 
-namespace Abaddax.Roslyn.Analyzers.Helper
+namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin
 {
-    internal static class ExpressionSyntaxHelper
+    public static class ExpressionOriginAnalysis
     {
-        #region Helper
-        [DebuggerDisplay("{DebuggerDisplay,nq}")]
-        public abstract class ExpressionOrigin
-        {
-            public abstract string ToFullString();
-
-            private string DebuggerDisplay
-            {
-                get
-                {
-                    return ToFullString().Replace("\r", "").Replace("\n", "");
-                }
-            }
-        }
-        public sealed class SyntaxExpressionOrigin : ExpressionOrigin
-        {
-            public ExpressionSyntax Syntax { get; }
-            public SyntaxExpressionOrigin(ExpressionSyntax syntax)
-            {
-                Syntax = syntax ?? throw new ArgumentNullException(nameof(syntax));
-            }
-            public override string ToFullString() => Syntax.ToFullString();
-        }
-        public sealed class MemberExpressionOrigin : ExpressionOrigin
-        {
-            public ExpressionOrigin Receiver { get; }
-            public ISymbol Member { get; }
-
-            public MemberExpressionOrigin(
-                ExpressionOrigin receiver,
-                ISymbol member)
-            {
-                Receiver = receiver ?? throw new ArgumentNullException(nameof(receiver));
-                Member = member ?? throw new ArgumentNullException(nameof(member));
-            }
-            public override string ToFullString()
-            {
-                return Receiver.ToFullString() + "." + Member.Name;
-            }
-        }
-        public abstract class ForwardingExpressionOrigin : ExpressionOrigin
-        {
-            public ExpressionOrigin Receiver { get; }
-            protected ForwardingExpressionOrigin(ExpressionOrigin receiver)
-            {
-                Receiver = receiver ?? throw new ArgumentNullException(nameof(receiver));
-            }
-        }
-        public sealed class AsyncSyntaxExpressionOrigin : ForwardingExpressionOrigin
-        {
-            public AsyncSyntaxExpressionOrigin(ExpressionOrigin receiver)
-                : base(receiver) { }
-            public override string ToFullString()
-            {
-                return "await " + Receiver.ToFullString();
-            }
-        }
-        public sealed class InvocationSyntaxExpressionOrigin : ForwardingExpressionOrigin
-        {
-            public InvocationExpressionSyntax Invocation { get; }
-            public InvocationSyntaxExpressionOrigin(ExpressionOrigin receiver, InvocationExpressionSyntax invocation)
-                : base(receiver)
-            {
-                Invocation = invocation ?? throw new ArgumentNullException(nameof(invocation));
-            }
-            public override string ToFullString()
-            {
-                return Receiver.ToFullString() + Invocation.ArgumentList.ToFullString();
-            }
-        }
-        #endregion
-
         /// <summary>
         /// Tries to unwrap forward variable declarations and assignments back to the last conclusive assignment
         /// </summary>
@@ -126,7 +55,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         /// </summary>
         /// <remarks>Example: var x = new Prop(); var y = x.A; var z = y.B; -> z = new Prop().A.B</remarks>
         /// <returns></returns>
-        public static ExpressionOrigin? TryExpand(
+        public static Models.ExpressionOrigin? TryExpand(
             ExpressionSyntax expression,
             SemanticModel semanticModel,
             CancellationToken cancellationToken,

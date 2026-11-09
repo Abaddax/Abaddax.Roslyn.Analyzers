@@ -1,7 +1,10 @@
-namespace Abaddax.Roslyn.Analyzers.Extensions
+using System.Diagnostics;
+
+namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
 {
-    internal static class EnumerableExtensions
+    public static class EnumerableExtensions
     {
+        [DebuggerStepThrough]
         public static T? ExactlyOneOrDefault<T>(this IEnumerable<T> source)
         {
             int found = 0;
@@ -18,18 +21,21 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
                 return first;
             return default;
         }
+        [DebuggerStepThrough]
         public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> source)
         {
             return source
                 .Where(x => x != null)
                 .Select(x => x!);
         }
+        [DebuggerStepThrough]
         public static IEnumerable<string> WhereNotNullOrEmpty(this IEnumerable<string?> source)
         {
             return source
                 .Where(x => !string.IsNullOrEmpty(x))
                 .Select(x => x!);
         }
+        [DebuggerStepThrough]
         public static IEnumerable<string> WhereNotNullOrWhiteSpace(this IEnumerable<string?> source)
         {
             return source

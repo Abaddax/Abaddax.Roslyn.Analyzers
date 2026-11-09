@@ -1,8 +1,8 @@
 using Microsoft.CodeAnalysis;
 
-namespace Abaddax.Roslyn.Analyzers.Extensions
+namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
 {
-    internal static class SymbolExtensions
+    public static class SymbolExtensions
     {
         public static bool HasNamespace(this ITypeSymbol symbol, string @namespace)
         {
@@ -38,13 +38,18 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
             return named.TypeArguments.ElementAtOrDefault(index);
         }
 
-        public static bool IsDerivedFrom(this ITypeSymbol symbol, ITypeSymbol baseClass)
-        {
-            if (SymbolEqualityComparer.Default.Equals(symbol, baseClass))
-                return true;
-            if (symbol.BaseType == null)
-                return false;
-            return symbol.BaseType.IsDerivedFrom(baseClass);
-        }
+        //public static bool IsDerivedFrom(this ITypeSymbol symbol, ITypeSymbol baseClass)
+        //{
+        //    if (SymbolEqualityComparer.Default.Equals(symbol, baseClass))
+        //        return true;
+        //    if (symbol.BaseType == null)
+        //        return false;
+        //    return symbol.BaseType.IsDerivedFrom(baseClass);
+        //}
+        //public static bool IsImplementationFor(this IMethodSymbol method, string typeName, string @namespace)
+        //{
+        //    return method.ExplicitInterfaceImplementations
+        //        .Any(m => m.ContainingType.HasName(typeName, @namespace));
+        //}
     }
 }

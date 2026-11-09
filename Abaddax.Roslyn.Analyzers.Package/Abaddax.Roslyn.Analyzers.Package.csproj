@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.CodeFixes\Abaddax.Roslyn.Analyzers.CodeFixes.csproj" />
+    <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.Framework\Abaddax.Roslyn.Analyzers.Framework.csproj" />
     <ProjectReference Include="..\Abaddax.Roslyn.Analyzers\Abaddax.Roslyn.Analyzers.csproj" />
   </ItemGroup>
 
@@ -26,10 +27,9 @@
     <None Include="buildMultiTargeting/**" Pack="true" PackagePath="buildMultiTargeting/" />
   </ItemGroup>
 
-  <Target Name="_AddAnalyzersToOutput"
-          AfterTargets="Build"
-          BeforeTargets="Pack">
+  <Target Name="_AddAnalyzersToOutput" AfterTargets="Build" BeforeTargets="Pack">
     <ItemGroup>
+      <TfmSpecificPackageFile Include="$(OutputPath)\Abaddax.Roslyn.Analyzers.Framework.dll" PackagePath="analyzers/dotnet/cs" />
       <TfmSpecificPackageFile Include="$(OutputPath)\Abaddax.Roslyn.Analyzers.dll" PackagePath="analyzers/dotnet/cs" />
       <TfmSpecificPackageFile Include="$(OutputPath)\Abaddax.Roslyn.Analyzers.CodeFixes.dll" PackagePath="analyzers/dotnet/cs" />
     </ItemGroup>

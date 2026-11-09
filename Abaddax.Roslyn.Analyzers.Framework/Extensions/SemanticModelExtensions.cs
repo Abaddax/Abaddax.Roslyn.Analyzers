@@ -1,8 +1,8 @@
 using Microsoft.CodeAnalysis;
 
-namespace Abaddax.Roslyn.Analyzers.Extensions
+namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
 {
-    internal static class SemanticModelExtensions
+    public static class SemanticModelExtensions
     {
         public static bool HasSameSyntaxTree(this SemanticModel semanticModel, SyntaxNode syntaxNode)
         {

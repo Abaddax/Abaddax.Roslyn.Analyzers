@@ -2,9 +2,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Abaddax.Roslyn.Analyzers.Extensions
+namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
 {
-    internal static class ExpressionSyntaxExtensions
+    public static class ExpressionSyntaxExtensions
     {
         public static ExpressionSyntax IgnoreCasts(this ExpressionSyntax expression)
         {
@@ -21,7 +21,7 @@ namespace Abaddax.Roslyn.Analyzers.Extensions
             return expression;
         }
 
-        public static MethodDeclarationSyntax? GetContainingMethodDeclarationBlock(this ExpressionSyntax expression)
+        public static MethodDeclarationSyntax? GetContainingMethodDeclarationBlock(this SyntaxNode expression)
         {
             return expression
                 .Ancestors()

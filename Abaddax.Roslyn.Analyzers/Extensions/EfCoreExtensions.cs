@@ -1,3 +1,4 @@
+using Abaddax.Roslyn.Analyzers.Framework.Extensions;
 using Microsoft.CodeAnalysis;
 
 namespace Abaddax.Roslyn.Analyzers.Extensions

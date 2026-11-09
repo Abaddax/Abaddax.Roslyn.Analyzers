@@ -1,9 +1,9 @@
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 
-namespace Abaddax.Roslyn.Analyzers.Extensions
+namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
 {
-    internal static class AttributeExtensions
+    public static class AttributeExtensions
     {
         public static bool HasName(this AttributeData attributeData, string attributeName, string @namespace)
         {

@@ -1,11 +1,11 @@
-using Abaddax.Roslyn.Analyzers.Extensions;
+using Abaddax.Roslyn.Analyzers.Framework.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 using System.Text.RegularExpressions;
 
-namespace Abaddax.Roslyn.Analyzers.Helper
+namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow.Helper
 {
-    internal static class LinqTraversalHelper
+    internal static class LambdaTraversalHelper
     {
         public static IOperation? GetForwardedParameter(
             IInvocationOperation linqMethodInvocation,

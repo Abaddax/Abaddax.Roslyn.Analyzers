@@ -1,20 +1,19 @@
-using Abaddax.Roslyn.Analyzers.Extensions;
+using Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow.Helper;
+using Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow.Models;
+using Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow;
+using Abaddax.Roslyn.Analyzers.Framework.Extensions;
+using Abaddax.Roslyn.Analyzers.Framework.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
-namespace Abaddax.Roslyn.Analyzers.Helper
+namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
 {
-    internal static class MethodFlowAnalysis
+    public static class MethodFlowAnalysis
     {
         private const int _MaxCallStackDepth = 10;
 
-        /// <summary>
-        /// Check if the traversal should be continued or aborted
-        /// </summary>
-        /// <returns><see langword="true"/> if the traversal should be continued, <see langword="false"/> to abort traversal</returns>
-        public delegate bool TraverseCallback(IOperation currentOperation);
 
         public static IEnumerable<IOperation> GetPossibleReturnValues(
             IInvocationOperation invocation,
@@ -87,43 +86,10 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         }
 
         #region Internal
-        private readonly struct ParameterValue
-        {
-            public IOperation Parameter { get; }
-            public Optional<object?> ConstValue => Parameter.ConstantValue;
-
-            public ParameterValue(IOperation parameterValue)
-            {
-                Parameter = parameterValue ?? throw new ArgumentNullException(nameof(parameterValue));
-            }
-        }
-        private readonly struct TraversalStackInfo
-        {
-            public SyntaxNode MethodSyntax { get; }
-            public IMethodSymbol Method { get; }
-            public SemanticModel PreviousSemanticModel { get; }
-            public IReadOnlyDictionary<IParameterSymbol, ParameterValue>? PreviousParameters { get; }
-            public ControlFlowGraph? PreviousControlFlowGraph { get; }
-
-            public TraversalStackInfo(
-                SyntaxNode methodSyntax,
-                IMethodSymbol method,
-                SemanticModel previousSemanticModel,
-                IReadOnlyDictionary<IParameterSymbol, ParameterValue>? previousParameters,
-                ControlFlowGraph? previousControlFlowGraph)
-            {
-                MethodSyntax = methodSyntax ?? throw new ArgumentNullException(nameof(methodSyntax));
-                Method = method ?? throw new ArgumentNullException(nameof(method));
-                PreviousSemanticModel = previousSemanticModel ?? throw new ArgumentNullException(nameof(previousSemanticModel));
-                PreviousParameters = previousParameters;
-                PreviousControlFlowGraph = previousControlFlowGraph;
-            }
-        }
-
         /// <summary>
         /// Internal resolver for <see cref="GetPossibleReturnValues(IInvocationOperation, SemanticModel, CancellationToken)"/>
         /// </summary>
-        /// <remarks>Also traversed local function</remarks>
+        /// <remarks>Also traverses local function</remarks>
         private static IEnumerable<IOperation> GetPossibleReturnValuesInternal(
             IInvocationOperation invocation,
             SemanticModel semanticModel,
@@ -164,23 +130,10 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                     yield break;
 
-                // Traverse the CFG contextually
-                var visited = new HashSet<BasicBlock>();
-                var queue = new Queue<BasicBlock>();
-                queue.Enqueue(cfg.Blocks[0]); // Start at the Entry block
-
-                while (queue.Count > 0)
+                foreach (var block in cfg.TraverseCfg(knownArguments, cancellationToken))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var currentBlock = queue.Dequeue();
-
-                    // Prevent infinite loops in `while`/`for` loops
-                    if (!visited.Add(currentBlock))
-                        continue;
-
                     // Check for explicit Return operations inside the block's body
-                    foreach (var op in currentBlock.Operations)
+                    foreach (var op in block.Operations)
                     {
                         if (op is IReturnOperation returnOp && returnOp.ReturnedValue != null)
                         {
@@ -190,47 +143,11 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     }
 
                     // Check if the branch itself is a return (common in Roslyn CFGs)
-                    if (currentBlock.FallThroughSuccessor?.Semantics == ControlFlowBranchSemantics.Return &&
-                        currentBlock.BranchValue != null)
+                    if (block.FallThroughSuccessor?.Semantics == ControlFlowBranchSemantics.Return &&
+                        block.BranchValue != null)
                     {
-                        foreach (var res in ResolveReturnedValue(currentBlock.BranchValue, semanticModel, cfg, knownArguments, callStack, maxCallStackDepth, cancellationToken))
+                        foreach (var res in ResolveReturnedValue(block.BranchValue, semanticModel, cfg, knownArguments, callStack, maxCallStackDepth, cancellationToken))
                             yield return res;
-                    }
-
-                    // Evaluate branching based on our known arguments
-                    if (currentBlock.ConditionalSuccessor != null)
-                    {
-                        bool? conditionResult = EvaluateCondition(currentBlock.BranchValue, knownArguments);
-
-                        // If ConditionKind is JumpIfTrue, and result is true, we take the ConditionalSuccessor.
-                        // If result is unknown (null), we must traverse BOTH paths.
-                        bool jumpWhen = currentBlock.ConditionKind == ControlFlowConditionKind.WhenTrue;
-
-                        if (conditionResult == null)
-                        {
-                            // Unknown condition, traverse both
-                            if (currentBlock.ConditionalSuccessor.Destination != null)
-                                queue.Enqueue(currentBlock.ConditionalSuccessor.Destination);
-                            if (currentBlock.FallThroughSuccessor?.Destination != null)
-                                queue.Enqueue(currentBlock.FallThroughSuccessor.Destination);
-                        }
-                        else if (conditionResult == jumpWhen)
-                        {
-                            // Condition matches the jump requirement
-                            if (currentBlock.ConditionalSuccessor.Destination != null)
-                                queue.Enqueue(currentBlock.ConditionalSuccessor.Destination);
-                        }
-                        else
-                        {
-                            // Condition fails the jump requirement, fall through
-                            if (currentBlock.FallThroughSuccessor?.Destination != null)
-                                queue.Enqueue(currentBlock.FallThroughSuccessor.Destination);
-                        }
-                    }
-                    else if (currentBlock.FallThroughSuccessor?.Destination != null)
-                    {
-                        // Unconditional branch
-                        queue.Enqueue(currentBlock.FallThroughSuccessor.Destination);
                     }
                 }
             }
@@ -243,7 +160,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         /// <summary>
         /// Internal resolver for <see cref="GetPossibleOutParameterValues(IInvocationOperation, IArgumentOperation, SemanticModel, CancellationToken)"/>
         /// </summary>
-        /// <remarks>Also traversed local function</remarks>
+        /// <remarks>Also traverses local function</remarks>
         private static IEnumerable<IOperation> GetPossibleOutParameterValuesInternal(
             IInvocationOperation invocation,
             IArgumentOperation outArgument,
@@ -288,84 +205,25 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                     yield break;
 
-                // Traverse the CFG contextually
-                // Track visited states. We track BOTH the block and the current operation 
-                // to prevent infinite loops while still allowing different paths to reach 
-                // the same block with different assigned out-values.
-                var visited = new HashSet<BasicBlock>();
-                // Queue tracks the block AND the last assigned value to our out parameter on this path
-                var queue = new Queue<(BasicBlock Block, IOperation? CurrentOutValue)>();
-                queue.Enqueue((cfg.Blocks[0], null)); // Start at the Entry block
+                var variableFlow = VariableFlowAnalysis.RunAnalysis(
+                    targetMethod,
+                    cfg,
+                    semanticModel,
+                    knownArguments,
+                    cancellationToken);
+                if (variableFlow == null)
+                    yield break;
 
-                while (queue.Count > 0)
+                var possibleOutValues = variableFlow.GetPossibleExitValues(outArgument)
+                    .ToArray();
+                // Only continue if all last assignment operations are know
+                if (possibleOutValues.Any(x => x == null))
+                    yield break;
+
+                foreach (var possibleOutValue in possibleOutValues)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var (currentBlock, currentOutValue) = queue.Dequeue();
-
-                    // If we reached the method exit, yield the last assigned value for this path
-                    if (currentBlock.Kind == BasicBlockKind.Exit)
-                    {
-                        if (currentOutValue != null)
-                        {
-                            foreach (var result in ResolveReturnedValue(currentOutValue, semanticModel, cfg, knownArguments, callStack, maxCallStackDepth, cancellationToken))
-                                yield return result;
-                        }
-                        continue;
-                    }
-
-                    // Prevent infinite loops in `while`/`for` loops
-                    if (!visited.Add(currentBlock))
-                        continue;
-
-                    // Check for assignments to our target out-parameter in this block
-                    foreach (IOperation op in currentBlock.Operations)
-                    {
-                        // Unwrap the assignment if it's inside a statement
-                        var assignment = op.FindAssignmentTarget(targetParameter);
-                        if (assignment?.Target is IParameterReferenceOperation paramRef &&
-                            SymbolEqualityComparer.Default.Equals(paramRef.Parameter, targetParameter))
-                        {
-                            // Update our tracked value for this path
-                            currentOutValue = assignment.Value.Value;
-                        }
-                    }
-
-                    // Evaluate branching based on our known arguments
-                    if (currentBlock.ConditionalSuccessor != null)
-                    {
-                        bool? conditionResult = EvaluateCondition(currentBlock.BranchValue, knownArguments);
-
-                        // If ConditionKind is JumpIfTrue, and result is true, we take the ConditionalSuccessor.
-                        // If result is unknown (null), we must traverse BOTH paths.
-                        bool jumpWhen = currentBlock.ConditionKind == ControlFlowConditionKind.WhenTrue;
-
-                        if (conditionResult == null)
-                        {
-                            // Unknown condition, traverse both
-                            if (currentBlock.ConditionalSuccessor.Destination != null)
-                                queue.Enqueue((currentBlock.ConditionalSuccessor.Destination, currentOutValue));
-                            if (currentBlock.FallThroughSuccessor?.Destination != null)
-                                queue.Enqueue((currentBlock.FallThroughSuccessor.Destination, currentOutValue));
-                        }
-                        else if (conditionResult == jumpWhen)
-                        {
-                            // Condition matches the jump requirement
-                            if (currentBlock.ConditionalSuccessor.Destination != null)
-                                queue.Enqueue((currentBlock.ConditionalSuccessor.Destination, currentOutValue));
-                        }
-                        else
-                        {
-                            // Condition fails the jump requirement, fall through
-                            if (currentBlock.FallThroughSuccessor?.Destination != null)
-                                queue.Enqueue((currentBlock.FallThroughSuccessor.Destination, currentOutValue));
-                        }
-                    }
-                    else if (currentBlock.FallThroughSuccessor?.Destination != null)
-                    {
-                        // Unconditional branch
-                        queue.Enqueue((currentBlock.FallThroughSuccessor.Destination, currentOutValue));
-                    }
+                    foreach (var res in ResolveReturnedValue(possibleOutValue, semanticModel, cfg, outerArguments, callStack, maxCallStackDepth, cancellationToken))
+                        yield return res;
                 }
             }
             finally
@@ -377,7 +235,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         /// <summary>
         /// Internal resolver for <see cref="GetPossibleLastAssignment(IOperation, SemanticModel, CancellationToken)"/>
         /// </summary>
-        /// <remarks>Also traversed local function</remarks>
+        /// <remarks>Also traverses local function</remarks>
         private static IEnumerable<IOperation> GetPossibleLastAssignmentInternal(
             IOperation variable,
             SemanticModel semanticModel,
@@ -403,11 +261,6 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 semanticModel = newSemanticModel;
             }
 
-            // Get symbol to check for assignments
-            var targetSymbol = semanticModel.GetSymbolInfo(expression, cancellationToken).Symbol;
-            if (targetSymbol == null)
-                yield break;
-
             // Get the Operation Tree and CFG for the target method
             var methodOperation = semanticModel.GetOperation(methodBody, cancellationToken);
             if (methodOperation == null)
@@ -416,125 +269,28 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                 yield break;
 
-            // Locate the starting BasicBlock and our index within it
-            FindStartingBlock(cfg, variable.Syntax,
-                out var startBlock,
-                out var usageIndex);
-            // Did not find index, so we scan the entire method
-            if (startBlock == null || usageIndex == null)
+            if (semanticModel.GetDeclaredSymbol(methodBody, cancellationToken) is not IMethodSymbol methodSymbol)
+                yield break;
+
+            var variableFlow = VariableFlowAnalysis.RunAnalysis(
+                methodSymbol,
+                cfg,
+                semanticModel,
+                outerArguments,
+                cancellationToken);
+            if (variableFlow == null)
+                yield break;
+
+            var possibleValues = variableFlow.GetPossibleLastValues(variable)
+                .ToArray();
+            // Only continue if all last assignment operations are know
+            if (possibleValues.Any(x => x == null))
+                yield break;
+
+            foreach (var possibleValue in possibleValues)
             {
-                startBlock = cfg.Blocks.Last();
-                usageIndex = startBlock.Operations.Length - 1;
-            }
-
-            // Traverse backwards
-            var visited = new HashSet<BasicBlock>();
-            var queue = new Queue<(BasicBlock Block, int StartIndex)>();
-            queue.Enqueue((startBlock, usageIndex.Value));
-
-            while (queue.Count > 0)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var (currentBlock, startIndex) = queue.Dequeue();
-
-                // Prevent infinite loops in `while`/`for` loops
-                if (!visited.Add(currentBlock))
-                    continue;
-
-                bool assignmentFoundInCurrentBlock = false;
-
-                // Walk backwards through the current block's operations
-                if (currentBlock.IsReachable)
-                {
-                    for (int i = startIndex; i >= 0; i--)
-                    {
-                        var topLevelOp = currentBlock.Operations[i];
-                        var nestedAssignments = topLevelOp.DescendantsAndSelf()
-                            .Reverse()
-                            .Select(x => (Operation: x, Assignment: x.FindAssignmentTarget(targetSymbol)))
-                            .Select(x =>
-                            {
-                                if (x.Assignment != null)
-                                    return x;
-
-                                // Special checks for properties/fields
-                                if (targetSymbol is IPropertySymbol or IFieldSymbol)
-                                {
-                                    // Block for instance method invocations, as they could potentially alter the property
-                                    if (x.Operation is IInstanceReferenceOperation { Parent: IInvocationOperation } instanceInvocation &&
-                                        (instanceInvocation.Type?.IsDerivedFrom(targetSymbol.ContainingType) ?? false))
-                                    {
-                                        // Block via empty assignment
-                                        return (x.Operation, (null, null));
-                                    }
-                                    // Block for calls that pass 'this' parameter, as they could potentially alter a public property
-                                    if (targetSymbol.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedAndInternal &&
-                                        x.Operation is IInvocationOperation thisPassedInvocation &&
-                                        thisPassedInvocation.Arguments
-                                            .Where(x => x.Value.Type?.IsDerivedFrom(targetSymbol.ContainingType) ?? false)
-                                            .Any(x => x.Value is IInstanceReferenceOperation))
-                                    {
-                                        // Block via empty assignment
-                                        return (x.Operation, (null, null));
-                                    }
-                                }
-                                // Also check for local functions, as they might also alter the target without explicit assignments
-                                if (x.Operation is IInvocationOperation invocation &&
-                                    invocation.TargetMethod.MethodKind is MethodKind.LocalFunction or MethodKind.LambdaMethod or MethodKind.DelegateInvoke)
-                                {
-                                    // Get CFG for the target method
-                                    var localCfg = cfg.GetLocalFunctionCfg(invocation.TargetMethod, cancellationToken);
-                                    if (localCfg == null)
-                                        return x;
-
-                                    // Add to callstack
-                                    if (callStack.Count > maxCallStackDepth || !callStack.Add(invocation.TargetMethod))
-                                        return x;
-                                    try
-                                    {
-                                        var possibleAssignments = GetPossibleLastAssignmentInternal(variable, semanticModel, localCfg, outerArguments, callStack, maxCallStackDepth, cancellationToken);
-                                        var possibleAssignment = possibleAssignments.ExactlyOneOrDefault();
-                                        if (possibleAssignment == null)
-                                            return x;
-                                        return (x.Operation, (possibleAssignment, possibleAssignment));
-                                    }
-                                    finally
-                                    {
-                                        callStack.Remove(invocation.TargetMethod);
-                                    }
-                                }
-                                return x;
-                            })
-                            .Where(x => x.Assignment != null)
-                            .Select(x => x.Assignment!.Value.Value);
-                        foreach (var assignment in nestedAssignments)
-                        {
-                            foreach (var res in ResolveReturnedValue(assignment, semanticModel, cfg, outerArguments, callStack, maxCallStackDepth, cancellationToken))
-                                yield return res;
-                            assignmentFoundInCurrentBlock = true;
-                            break; // Stop looking at earlier assignments in this statement
-                        }
-
-                        // We found the latest assignment in this specific branch. 
-                        // Stop looking further up in THIS block.
-                        if (assignmentFoundInCurrentBlock)
-                            break;
-                    }
-                }
-
-                // If we didn't find an assignment in this block, queue up its predecessors
-                if (!assignmentFoundInCurrentBlock)
-                {
-                    foreach (var branch in currentBlock.Predecessors)
-                    {
-                        if (branch.Source != null)
-                        {
-                            // Start at the very end of the predecessor block
-                            queue.Enqueue((branch.Source, branch.Source.Operations.Length - 1));
-                        }
-                    }
-                }
+                foreach (var res in ResolveReturnedValue(possibleValue, semanticModel, cfg, outerArguments, callStack, maxCallStackDepth, cancellationToken))
+                    yield return res;
             }
         }
         /// <summary>
@@ -817,19 +573,13 @@ namespace Abaddax.Roslyn.Analyzers.Helper
 
             // Check delegate creation
             if (delegateInstance is IDelegateCreationOperation delegateCreation)
-            {
                 delegateInstance = delegateCreation.Target;
-            }
 
             // Get lambda syntax
             if (delegateInstance is IAnonymousFunctionOperation anonymousFunction)
-            {
                 return anonymousFunction.Syntax;
-            }
             if (delegateInstance is IFlowAnonymousFunctionOperation flowAnonymousFunction)
-            {
                 return flowAnonymousFunction.Syntax;
-            }
 
             // Handle methods passed as delegates
             if (delegateInstance is IMethodReferenceOperation methodReference)
@@ -840,9 +590,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 return syntaxRef.GetSyntax(cancellationToken);
             }
             if (delegateInstance is ILocalFunctionOperation localFunction)
-            {
                 return localFunction.Syntax;
-            }
 
             return null;
         }
@@ -868,9 +616,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
             foreach (var arg in invocation.Arguments)
             {
                 if (arg.Parameter != null)
-                {
                     knownArguments[arg.Parameter] = new ParameterValue(arg.Value);
-                }
             }
 
             // Unwrap delegated via knownArguments
@@ -945,7 +691,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                 if (TryEvaluateValue(binaryOp.LeftOperand, knownArguments, out object? left) &&
                     TryEvaluateValue(binaryOp.RightOperand, knownArguments, out object? right))
                 {
-                    bool areEqual = object.Equals(left, right);
+                    bool areEqual = Equals(left, right);
                     return binaryOp.OperatorKind == BinaryOperatorKind.Equals
                         ? areEqual :
                         !areEqual;
@@ -1033,7 +779,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
         /// Finds all corresponding local caller parameter reference for the given <paramref name="paramRef"/>
         /// </summary>
         /// <returns>CallerParamRef and ParentInvocation, if the invocation happened inside another parent invocation</returns>
-        private static IEnumerable<(IOperation CallerParamRef, IInvocationOperation? ParentInvocation)> GetCallingOperations(
+        private static IEnumerable<CallerInfo> GetCallingOperations(
             IParameterReferenceOperation paramRef,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
@@ -1078,10 +824,8 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                     foreach (var invocation in callerCfg.ListAllOperations().OfType<IInvocationOperation>())
                     {
                         if (SymbolEqualityComparer.Default.Equals(invocation.TargetMethod, methodSymbol))
-                        {
                             // Found, return argument caller value
-                            yield return (invocation.Arguments[paramIndex].Value, null);
-                        }
+                            yield return new CallerInfo(invocation.Arguments[paramIndex].Value, null, false);
                     }
                 }
                 break;
@@ -1098,10 +842,10 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                         yield break;
 
                     // Shortcut for known LINQ methods
-                    var linqParameter = LinqTraversalHelper.GetForwardedParameter(parentInvocation, argument, paramIndex);
+                    var linqParameter = LambdaTraversalHelper.GetForwardedParameter(parentInvocation, argument, paramIndex);
                     if (linqParameter != null)
                     {
-                        yield return (linqParameter, null);
+                        yield return new CallerInfo(linqParameter, null, true);
                         yield break;
                     }
 
@@ -1136,7 +880,7 @@ namespace Abaddax.Roslyn.Analyzers.Helper
                             SymbolEqualityComparer.Default.Equals(delParamRef.Parameter, delegateParam))
                         {
                             // Found, return argument caller value
-                            yield return (invocation.Arguments[paramIndex].Value, parentInvocation);
+                            yield return new CallerInfo(invocation.Arguments[paramIndex].Value, parentInvocation, false);
                         }
                     }
                 }
