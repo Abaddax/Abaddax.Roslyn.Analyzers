@@ -75,10 +75,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -115,11 +114,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ReferenceTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Targets.IsEmpty, Is.False);
-            Assert.That(value.Targets.Nodes, Has.Count.EqualTo(1));
-
-            var node = value.Targets.Nodes.First();
-            Assert.That(node.AllocationOperation, Is.Not.Null);
-            Assert.That(node.AllocationOperation.Syntax.ToFullString(), Is.EqualTo("new Test()").IgnoreWhiteSpace);
+            Assert.That(
+                value.Targets.Nodes.Select(x => x.AllocationOperation?.Syntax.ToFullString()),
+                Is.EquivalentTo(["new Test()"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -157,10 +154,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -198,11 +194,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ReferenceTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Targets.IsEmpty, Is.False);
-            Assert.That(value.Targets.Nodes, Has.Count.EqualTo(1));
-
-            var node = value.Targets.Nodes.First();
-            Assert.That(node.AllocationOperation, Is.Not.Null);
-            Assert.That(node.AllocationOperation.Syntax.ToFullString(), Is.EqualTo("new Derived()").IgnoreWhiteSpace);
+            Assert.That(
+                value.Targets.Nodes.Select(x => x.AllocationOperation?.Syntax.ToFullString()),
+                Is.EquivalentTo(["new Derived()"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -240,10 +234,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -280,11 +273,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ReferenceTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Targets.IsEmpty, Is.False);
-            Assert.That(value.Targets.Nodes, Has.Count.EqualTo(1));
-
-            var node = value.Targets.Nodes.First();
-            Assert.That(node.AllocationOperation, Is.Not.Null);
-            Assert.That(node.AllocationOperation.Syntax.ToFullString(), Is.EqualTo("new Test()").IgnoreWhiteSpace);
+            Assert.That(
+                value.Targets.Nodes.Select(x => x.AllocationOperation?.Syntax.ToFullString()),
+                Is.EquivalentTo(["new Test()"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -321,10 +312,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("null").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["null"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -361,11 +351,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ReferenceTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Targets.IsEmpty, Is.False);
-            Assert.That(value.Targets.Nodes, Has.Count.EqualTo(1));
-
-            var node = value.Targets.Nodes.First();
-            Assert.That(node.AllocationOperation, Is.Not.Null);
-            Assert.That(node.AllocationOperation.Syntax.ToFullString(), Is.EqualTo("null").IgnoreWhiteSpace);
+            Assert.That(
+                value.Targets.Nodes.Select(x => x.AllocationOperation?.Syntax.ToFullString()),
+                Is.EquivalentTo(["null"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -406,10 +394,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("Static.Value").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["Static.Value"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -450,11 +437,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ReferenceTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Targets.IsEmpty, Is.False);
-            Assert.That(value.Targets.Nodes, Has.Count.EqualTo(1));
-
-            var node = value.Targets.Nodes.First();
-            Assert.That(node.AllocationOperation, Is.Not.Null);
-            Assert.That(node.AllocationOperation.Syntax.ToFullString(), Is.EqualTo("Static.Value").IgnoreWhiteSpace);
+            Assert.That(
+                value.Targets.Nodes.Select(x => x.AllocationOperation?.Syntax.ToFullString()),
+                Is.EquivalentTo(["Static.Value"]).IgnoreWhiteSpace);
         }
 
 
@@ -502,10 +487,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var fieldValue = value.Fields[path.Members[0]] as ValueTypeValue;
             Assert.That(fieldValue, Is.Not.Null);
             Assert.That(fieldValue.Fields, Is.Empty);
-            Assert.That(fieldValue.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleFieldValue = fieldValue.PossibleValues.First();
-            Assert.That(possibleFieldValue.Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                fieldValue.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -556,11 +540,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var fieldValue = heapNode.Fields[path.Members[0]] as ReferenceTypeValue;
             Assert.That(fieldValue, Is.Not.Null);
             Assert.That(fieldValue.Targets.IsEmpty, Is.False);
-            Assert.That(fieldValue.Targets.Nodes, Has.Count.EqualTo(1));
-
-            var fieldNode = fieldValue.Targets.Nodes.First();
-            Assert.That(fieldNode.AllocationOperation, Is.Not.Null);
-            Assert.That(fieldNode.AllocationOperation.Syntax.ToFullString(), Is.EqualTo("new Derived()").IgnoreWhiteSpace);
+            Assert.That(
+                fieldValue.Targets.Nodes.Select(x => x.AllocationOperation?.Syntax.ToFullString()),
+                Is.EquivalentTo(["new Derived()"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -607,10 +589,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var fieldValue = value.Fields[path.Members[0]] as ValueTypeValue;
             Assert.That(fieldValue, Is.Not.Null);
             Assert.That(fieldValue.Fields, Is.Empty);
-            Assert.That(fieldValue.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleFieldValue = fieldValue.PossibleValues.First();
-            Assert.That(possibleFieldValue.Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+            Assert.That(
+                fieldValue.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -663,11 +644,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var fieldValue = heapNode.Fields[path.Members[0]] as ReferenceTypeValue;
             Assert.That(fieldValue, Is.Not.Null);
             Assert.That(fieldValue.Targets.IsEmpty, Is.False);
-            Assert.That(fieldValue.Targets.Nodes, Has.Count.EqualTo(1));
-
-            var fieldNode = fieldValue.Targets.Nodes.First();
-            Assert.That(fieldNode.AllocationOperation, Is.Not.Null);
-            Assert.That(fieldNode.AllocationOperation.Syntax.ToFullString(), Is.EqualTo("new Derived2()").IgnoreWhiteSpace);
+            Assert.That(
+                fieldValue.Targets.Nodes.Select(x => x.AllocationOperation?.Syntax.ToFullString()),
+                Is.EquivalentTo(["new Derived2()"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -717,10 +696,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var fieldValue = value.Fields[path.Members[0]] as ValueTypeValue;
             Assert.That(fieldValue, Is.Not.Null);
             Assert.That(fieldValue.Fields, Is.Empty);
-            Assert.That(fieldValue.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleFieldValue = fieldValue.PossibleValues.First();
-            Assert.That(possibleFieldValue.Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+            Assert.That(
+                fieldValue.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -776,11 +754,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var fieldValue = heapNode.Fields[path.Members[0]] as ReferenceTypeValue;
             Assert.That(fieldValue, Is.Not.Null);
             Assert.That(fieldValue.Targets.IsEmpty, Is.False);
-            Assert.That(fieldValue.Targets.Nodes, Has.Count.EqualTo(1));
-
-            var fieldNode = fieldValue.Targets.Nodes.First();
-            Assert.That(fieldNode.AllocationOperation, Is.Not.Null);
-            Assert.That(fieldNode.AllocationOperation.Syntax.ToFullString(), Is.EqualTo("new Derived2()").IgnoreWhiteSpace);
+            Assert.That(
+                fieldValue.Targets.Nodes.Select(x => x.AllocationOperation?.Syntax.ToFullString()),
+                Is.EquivalentTo(["new Derived2()"]).IgnoreWhiteSpace);
         }
 
         [Test]
@@ -822,8 +798,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(2));
-
             Assert.That(
                 value.PossibleValues.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["1", "2"]).IgnoreWhiteSpace);
@@ -868,8 +842,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ReferenceTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Targets.IsEmpty, Is.False);
-            Assert.That(value.Targets.Nodes, Has.Count.EqualTo(2));
-
             Assert.That(
                 value.Targets.Nodes.Select(x => x.AllocationOperation?.Syntax.ToFullString()),
                 Is.EquivalentTo(["new Derived()", "new Derived2()"]).IgnoreWhiteSpace);
@@ -911,8 +883,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(2));
-
             Assert.That(
                 value.PossibleValues.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["1", "2"]).IgnoreWhiteSpace);
@@ -956,7 +926,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Targets.IsEmpty, Is.False);
             Assert.That(value.Targets.Nodes, Has.Count.EqualTo(2));
-
             Assert.That(
                 value.Targets.Nodes.Select(x => x.AllocationOperation?.Syntax.ToFullString()),
                 Is.EquivalentTo(["new Derived()", "new Derived2()"]).IgnoreWhiteSpace);
@@ -1001,8 +970,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(2));
-
             Assert.That(
                 value.PossibleValues.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["0", "var"]).IgnoreWhiteSpace);
@@ -1066,19 +1033,16 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value1 = state1.Environment[path1.Root] as ValueTypeValue;
             Assert.That(value1, Is.Not.Null);
             Assert.That(value1.Fields, Is.Empty);
-            Assert.That(value1.PossibleValues, Has.Count.EqualTo(2));
-
-            var value2 = state2.Environment[path2.Root] as ValueTypeValue;
-            Assert.That(value2, Is.Not.Null);
-            Assert.That(value2.Fields, Is.Empty);
-            Assert.That(value2.PossibleValues, Has.Count.EqualTo(1));
-
             Assert.That(
                 value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["2", "3"]).IgnoreWhiteSpace);
 
-            var possibleValue2 = value2.PossibleValues.First();
-            Assert.That(possibleValue2.Syntax.ToFullString(), Is.EqualTo("4").IgnoreWhiteSpace);
+            var value2 = state2.Environment[path2.Root] as ValueTypeValue;
+            Assert.That(value2, Is.Not.Null);
+            Assert.That(value2.Fields, Is.Empty);
+            Assert.That(
+                value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["4"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -1146,19 +1110,16 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value1 = state1.Environment[path1.Root] as ValueTypeValue;
             Assert.That(value1, Is.Not.Null);
             Assert.That(value1.Fields, Is.Empty);
-            Assert.That(value1.PossibleValues, Has.Count.EqualTo(4));
+            Assert.That(
+                value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["0", "1", "2", "3"]).IgnoreWhiteSpace);
 
             var value2 = state2.Environment[path2.Root] as ValueTypeValue;
             Assert.That(value2, Is.Not.Null);
             Assert.That(value2.Fields, Is.Empty);
-            Assert.That(value2.PossibleValues, Has.Count.EqualTo(1));
-
             Assert.That(
-                  value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
-                  Is.EquivalentTo(["0", "1", "2", "3"]).IgnoreWhiteSpace);
-
-            var possibleValue2 = value2.PossibleValues.First();
-            Assert.That(possibleValue2.Syntax.ToFullString(), Is.EqualTo("4").IgnoreWhiteSpace);
+                value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["4"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -1229,19 +1190,16 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value1 = state1.Environment[path1.Root] as ValueTypeValue;
             Assert.That(value1, Is.Not.Null);
             Assert.That(value1.Fields, Is.Empty);
-            Assert.That(value1.PossibleValues, Has.Count.EqualTo(4));
+            Assert.That(
+                value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2", "3", "4", "5"]).IgnoreWhiteSpace);
 
             var value2 = state2.Environment[path2.Root] as ValueTypeValue;
             Assert.That(value2, Is.Not.Null);
             Assert.That(value2.Fields, Is.Empty);
-            Assert.That(value2.PossibleValues, Has.Count.EqualTo(1));
-
             Assert.That(
-                  value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
-                  Is.EquivalentTo(["2", "3", "4", "5"]).IgnoreWhiteSpace);
-
-            var possibleValue2 = value2.PossibleValues.First();
-            Assert.That(possibleValue2.Syntax.ToFullString(), Is.EqualTo("4").IgnoreWhiteSpace);
+                value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["4"]).IgnoreWhiteSpace);
         }
 
 
@@ -1281,10 +1239,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("Create()").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["Create()"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -1322,10 +1279,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("func.Invoke()").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["func.Invoke()"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -1362,10 +1318,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("func.Invoke()").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["func.Invoke()"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -1403,10 +1358,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("await CreateAsync()").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["await CreateAsync()"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -1546,10 +1500,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -1587,11 +1540,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ReferenceTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Targets.IsEmpty, Is.False);
-            Assert.That(value.Targets.Nodes, Has.Count.EqualTo(1));
-
-            var node = value.Targets.Nodes.First();
-            Assert.That(node.AllocationOperation, Is.Not.Null);
-            Assert.That(node.AllocationOperation.Syntax.ToFullString(), Is.EqualTo("new Derived()").IgnoreWhiteSpace);
+            Assert.That(
+                value.Targets.Nodes.Select(x => x.AllocationOperation?.Syntax.ToFullString()),
+                Is.EquivalentTo(["new Derived()"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -1639,18 +1590,16 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value1 = state1.Environment[path1.Root] as ValueTypeValue;
             Assert.That(value1, Is.Not.Null);
             Assert.That(value1.Fields, Is.Empty);
-            Assert.That(value1.PossibleValues, Has.Count.EqualTo(1));
+            Assert.That(
+                value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["3"]).IgnoreWhiteSpace);
 
             var value2 = state2.Environment[path2.Root] as ValueTypeValue;
             Assert.That(value2, Is.Not.Null);
             Assert.That(value2.Fields, Is.Empty);
-            Assert.That(value2.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue1 = value1.PossibleValues.First();
-            Assert.That(possibleValue1.Syntax.ToFullString(), Is.EqualTo("3").IgnoreWhiteSpace);
-
-            var possibleValue2 = value2.PossibleValues.First();
-            Assert.That(possibleValue2.Syntax.ToFullString(), Is.EqualTo("3").IgnoreWhiteSpace);
+            Assert.That(
+                value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["3"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -1687,10 +1636,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("var x").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["var x"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -1735,18 +1683,16 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value1 = state1.Environment[path1.Root] as ValueTypeValue;
             Assert.That(value1, Is.Not.Null);
             Assert.That(value1.Fields, Is.Empty);
-            Assert.That(value1.PossibleValues, Has.Count.EqualTo(1));
+            Assert.That(
+                value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
 
             var value2 = state2.Environment[path2.Root] as ValueTypeValue;
             Assert.That(value2, Is.Not.Null);
             Assert.That(value2.Fields, Is.Empty);
-            Assert.That(value2.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue1 = value1.PossibleValues.First();
-            Assert.That(possibleValue1.Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
-
-            var possibleValue2 = value2.PossibleValues.First();
-            Assert.That(possibleValue2.Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+            Assert.That(
+                value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -1793,18 +1739,16 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value1 = state1.Environment[path1.Root] as ValueTypeValue;
             Assert.That(value1, Is.Not.Null);
             Assert.That(value1.Fields, Is.Empty);
-            Assert.That(value1.PossibleValues, Has.Count.EqualTo(1));
+            Assert.That(
+                value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
 
             var value2 = state2.Environment[path2.Root] as ValueTypeValue;
             Assert.That(value2, Is.Not.Null);
             Assert.That(value2.Fields, Is.Empty);
-            Assert.That(value2.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue1 = value1.PossibleValues.First();
-            Assert.That(possibleValue1.Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
-
-            var possibleValue2 = value2.PossibleValues.First();
-            Assert.That(possibleValue2.Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
 
         [Test]
@@ -1844,10 +1788,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("x + y").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["x + y"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -1885,10 +1828,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value = state.Environment[path.Root] as ValueTypeValue;
             Assert.That(value, Is.Not.Null);
             Assert.That(value.Fields, Is.Empty);
-            Assert.That(value.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue = value.PossibleValues.First();
-            Assert.That(possibleValue.Syntax.ToFullString(), Is.EqualTo("x++").IgnoreWhiteSpace);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["x++"]).IgnoreWhiteSpace);
         }
 
         [Test]
@@ -1943,18 +1885,16 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value1 = state1.Environment[path1.Root] as ValueTypeValue;
             Assert.That(value1, Is.Not.Null);
             Assert.That(value1.Fields, Is.Empty);
-            Assert.That(value1.PossibleValues, Has.Count.EqualTo(1));
+            Assert.That(
+                value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
 
             var value2 = state2.Environment[path2.Root] as ValueTypeValue;
             Assert.That(value2, Is.Not.Null);
             Assert.That(value2.Fields, Is.Empty);
-            Assert.That(value2.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue1 = value1.PossibleValues.First();
-            Assert.That(possibleValue1.Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
-
-            var possibleValue2 = value2.PossibleValues.First();
-            Assert.That(possibleValue2.Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -2013,18 +1953,16 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value1 = state1.Environment[path1.Root] as ValueTypeValue;
             Assert.That(value1, Is.Not.Null);
             Assert.That(value1.Fields, Is.Empty);
-            Assert.That(value1.PossibleValues, Has.Count.EqualTo(1));
+            Assert.That(
+                value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
 
             var value2 = state2.Environment[path2.Root] as ValueTypeValue;
             Assert.That(value2, Is.Not.Null);
             Assert.That(value2.Fields, Is.Empty);
-            Assert.That(value2.PossibleValues, Has.Count.EqualTo(1));
-
-            var possibleValue1 = value1.PossibleValues.First();
-            Assert.That(possibleValue1.Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
-
-            var possibleValue2 = value2.PossibleValues.First();
-            Assert.That(possibleValue2.Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -2304,16 +2242,13 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             var value1 = state1.Environment[path1.Root] as ValueTypeValue;
             Assert.That(value1, Is.Not.Null);
             Assert.That(value1.Fields, Is.Empty);
-            Assert.That(value1.PossibleValues, Has.Count.EqualTo(1));
+            Assert.That(
+                value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["InnerLocalFunction(5)"]).IgnoreWhiteSpace);
 
             var value2 = state2.Environment[path2.Root] as ValueTypeValue;
             Assert.That(value2, Is.Not.Null);
             Assert.That(value2.Fields, Is.Empty);
-            Assert.That(value2.PossibleValues, Has.Count.EqualTo(2));
-
-            var possibleValue1 = value1.PossibleValues.First();
-            Assert.That(possibleValue1.Syntax.ToFullString(), Is.EqualTo("InnerLocalFunction(5)").IgnoreWhiteSpace);
-
             Assert.That(
                 value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo([

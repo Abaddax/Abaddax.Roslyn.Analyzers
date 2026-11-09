@@ -37,6 +37,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
             return null;
         }
 
+        /// <summary>
+        /// Gets the known possible values at the state of the given <paramref name="variableReference"/> inside the method
+        /// </summary>
         public IEnumerable<IOperation?> GetPossibleLastValues(IOperation variableReference)
         {
             var operation = CFG.FindMatchingOperation(variableReference);
@@ -58,5 +61,28 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
                     yield return possibleValue;
             }
         }
+        /// <summary>
+        /// Gets the known possible values of the given <paramref name="variableReference"/> at the exit of the method
+        /// </summary>
+        public IEnumerable<IOperation?> GetPossibleExitValues(IOperation variableReference)
+        {
+            var accessPath = VariableFlowAnalysis.TryBuildAccessPath(variableReference, out _);
+            if (accessPath == null)
+                yield break;
+            foreach (var exitState in ExitStates)
+            {
+                var state = exitState;
+                var value = ProgramStateExtensions.EvaluatePath(ref state, accessPath.Value);
+                if (value == null)
+                    continue;
+                foreach (var possibleValue in ProgramStateExtensions.GetPossibleLastValues(value))
+                {
+                    // Do not return itself
+                    if (!OperationEqualityComparer.Default.Equals(possibleValue, variableReference))
+                        yield return possibleValue;
+                }
+            }
+        }
+
     }
 }

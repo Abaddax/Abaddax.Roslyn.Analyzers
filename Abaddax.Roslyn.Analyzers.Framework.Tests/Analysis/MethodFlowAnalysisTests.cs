@@ -59,8 +59,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleReturns, Has.Length.EqualTo(1));
-            Assert.That(possibleReturns[0].Syntax.ToFullString(), Is.EqualTo("x").IgnoreWhiteSpace);
+            Assert.That(
+                possibleReturns.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["x"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleReturnValues))]
@@ -93,7 +94,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleReturns, Has.Length.EqualTo(2));
             Assert.That(
                 possibleReturns.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["1", "2"]).IgnoreWhiteSpace);
@@ -129,8 +129,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleReturns, Has.Length.EqualTo(1));
-            Assert.That(possibleReturns[0].Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                possibleReturns.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleReturnValues))]
@@ -163,8 +164,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleReturns, Has.Length.EqualTo(1));
-            Assert.That(possibleReturns[0].Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                possibleReturns.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleReturnValues))]
@@ -206,8 +208,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleReturns, Has.Length.EqualTo(1));
-            Assert.That(possibleReturns[0].Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+            Assert.That(
+                possibleReturns.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleReturnValues))]
@@ -258,8 +261,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleReturns, Has.Length.EqualTo(1));
-            Assert.That(possibleReturns[0].Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                possibleReturns.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleReturnValues))]
@@ -288,8 +292,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleReturns, Has.Length.EqualTo(1));
-            Assert.That(possibleReturns[0].Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                possibleReturns.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleReturnValues))]
@@ -325,7 +330,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleReturns, Has.Length.EqualTo(2));
             Assert.That(
                 possibleReturns.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["i", "x"]).IgnoreWhiteSpace);
@@ -361,8 +365,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleOutParameters, Has.Length.EqualTo(1));
-            Assert.That(possibleOutParameters[0].Syntax.ToFullString(), Is.EqualTo("x").IgnoreWhiteSpace);
+            Assert.That(
+                possibleOutParameters.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleOutParameterValues))]
@@ -395,7 +400,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleOutParameters, Has.Length.EqualTo(2));
             Assert.That(
                 possibleOutParameters.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["1", "2"]).IgnoreWhiteSpace);
@@ -431,8 +435,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleOutParameters, Has.Length.EqualTo(1));
-            Assert.That(possibleOutParameters[0].Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                possibleOutParameters.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleOutParameterValues))]
@@ -465,8 +470,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleOutParameters, Has.Length.EqualTo(1));
-            Assert.That(possibleOutParameters[0].Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                 possibleOutParameters.Select(x => x.Syntax.ToFullString()),
+                 Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleOutParameterValues))]
@@ -512,8 +518,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleOutParameters, Has.Length.EqualTo(1));
-            Assert.That(possibleOutParameters[0].Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+            Assert.That(
+                possibleOutParameters.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleOutParameterValues))]
@@ -564,8 +571,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleOutParameters, Has.Length.EqualTo(1));
-            Assert.That(possibleOutParameters[0].Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                possibleOutParameters.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleOutParameterValues))]
@@ -595,8 +603,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleOutParameters, Has.Length.EqualTo(1));
-            Assert.That(possibleOutParameters[0].Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                possibleOutParameters.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleOutParameterValues))]
@@ -637,10 +646,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleOutParameters, Has.Length.EqualTo(2));
             Assert.That(
                 possibleOutParameters.Select(x => x.Syntax.ToFullString()),
-                Is.EquivalentTo(["i", "y"]).IgnoreWhiteSpace);
+                Is.EquivalentTo(["1", "0", "i++"]).IgnoreWhiteSpace);
         }
 
 
@@ -668,8 +676,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleLastAssignments, Has.Length.EqualTo(1));
-            Assert.That(possibleLastAssignments[0].Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                possibleLastAssignments.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]
@@ -699,8 +708,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleLastAssignments, Has.Length.EqualTo(1));
-            Assert.That(possibleLastAssignments[0].Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+            Assert.That(
+                possibleLastAssignments.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]
@@ -730,8 +740,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleLastAssignments, Has.Length.EqualTo(1));
-            Assert.That(possibleLastAssignments[0].Syntax.ToFullString(), Is.EqualTo("3").IgnoreWhiteSpace);
+            Assert.That(
+                possibleLastAssignments.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["3"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]
@@ -760,7 +771,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleLastAssignments, Has.Length.EqualTo(3));
             Assert.That(
                  possibleLastAssignments.Select(x => x.Syntax.ToFullString()),
                  Is.EquivalentTo(["1", "0", "i++"]).IgnoreWhiteSpace);
@@ -792,7 +802,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleLastAssignments, Has.Length.EqualTo(2));
             Assert.That(
                 possibleLastAssignments.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["0", "var"]).IgnoreWhiteSpace);
@@ -822,8 +831,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleLastAssignments, Has.Length.EqualTo(1));
-            Assert.That(possibleLastAssignments[0].Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                possibleLastAssignments.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]
@@ -850,8 +860,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleLastAssignments, Has.Length.EqualTo(1));
-            Assert.That(possibleLastAssignments[0].Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                possibleLastAssignments.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]
@@ -880,8 +891,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleLastAssignments, Has.Length.EqualTo(1));
-            Assert.That(possibleLastAssignments[0].Syntax.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+            Assert.That(
+                possibleLastAssignments.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]
@@ -911,8 +923,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleLastAssignments, Has.Length.EqualTo(1));
-            Assert.That(possibleLastAssignments[0].Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+            Assert.That(
+                possibleLastAssignments.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]
@@ -1047,8 +1060,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleLastAssignments, Has.Length.EqualTo(1));
-            Assert.That(possibleLastAssignments[0].Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+            Assert.That(
+                possibleLastAssignments.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]
@@ -1084,8 +1098,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 default)
                 .ToArray();
 
-            Assert.That(possibleLastAssignments, Has.Length.EqualTo(1));
-            Assert.That(possibleLastAssignments[0].Syntax.ToFullString(), Is.EqualTo("2").IgnoreWhiteSpace);
+            Assert.That(
+                possibleLastAssignments.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(MethodFlowAnalysis.GetPossibleLastAssignment))]

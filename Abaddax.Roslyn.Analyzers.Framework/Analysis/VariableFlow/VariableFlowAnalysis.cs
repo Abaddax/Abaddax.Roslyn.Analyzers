@@ -87,7 +87,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             // Track In-States and Out-States for every basic block
             var blockInStates = new Dictionary<BasicBlock, ProgramState>();
             var blockOutStates = new Dictionary<BasicBlock, ProgramState>();
-            var exitStates = new List<ProgramState>();
+            var exitStates = new Dictionary<BasicBlock, ProgramState>();
 
             var states = new Dictionary<IOperation, ProgramState>(OperationEqualityComparer.Default);
 
@@ -139,11 +139,15 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
 
                     // Store exit blocks
                     if (block.Kind == BasicBlockKind.Exit)
-                        exitStates.Add(currentState);
+                    {
+                        if (exitStates.TryGetValue(block, out var currentExitState))
+                            currentState = ProgramState.Merge(currentExitState, currentState);
+                        exitStates[block] = currentState;
+                    }
                 }
             }
 
-            return new VariableFlowState(analysisContext.CFG, states, exitStates);
+            return new VariableFlowState(analysisContext.CFG, states, exitStates.Values);
         }
 
         private static ProgramState TransferOperation(
@@ -342,12 +346,11 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             // Assign out/ref params
             foreach (var outParam in outParams)
             {
-                var creation = outParam.Value;
-                var creationType = outParam.Value.Type;
-                if (creationType == null)
-                    throw new Exception("Unknown type of the creation operation");
+                if (outParam.Parameter == null)
+                    throw new Exception("Unknown out parameter");
+                var sourcePath = AccessPath.FromRoot(outParam.Parameter, outParam.Value);
                 var targetPath = BuildAccessPath(outParam.Value);
-                state = state.AllocateOrWriteDefault(targetPath, creationType, creation);
+                state = state.Assign(targetPath, sourcePath);
             }
 
             // Invalidate nested fields
@@ -518,15 +521,15 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
                     {
                         return AccessPath.FromRoot(paramRef.Parameter).AppendRange(members);
                     }
-                    case IArgumentOperation argument:
-                    {
-                        current = argument.Value;
-                        break;
-                    }
                     case IDeclarationExpressionOperation decl:
                     {
                         current = decl.Expression;
                         break;
+                    }
+                    // Caller argument passed to the current method -> unwrap to local parameter
+                    case IArgumentOperation { Parameter: not null } argument:
+                    {
+                        return AccessPath.FromRoot(argument.Parameter, argument).AppendRange(members);
                     }
                     default:
                     {

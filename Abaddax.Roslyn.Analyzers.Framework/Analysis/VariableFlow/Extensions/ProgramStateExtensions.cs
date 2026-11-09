@@ -278,7 +278,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Extensions
             {
                 case ValueTypeValue valVal:
                 {
-                    foreach (var possibleValue in valVal.PossibleValues)
+                    foreach (var possibleValue in valVal.PossibleValues.Distinct(OperationEqualityComparer.Default))
                     {
                         yield return possibleValue;
                     }
@@ -286,9 +286,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Extensions
                 }
                 case ReferenceTypeValue refVal:
                 {
-                    foreach (var node in refVal.Targets.Nodes)
+                    foreach (var allocationOperation in refVal.Targets.Nodes.Select(x => x.AllocationOperation).Distinct(OperationEqualityComparer.Default))
                     {
-                        yield return node.AllocationOperation;
+                        yield return allocationOperation;
                     }
                     yield break;
                 }

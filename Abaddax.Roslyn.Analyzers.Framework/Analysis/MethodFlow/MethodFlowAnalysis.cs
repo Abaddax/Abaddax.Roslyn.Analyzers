@@ -130,23 +130,10 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
                 if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                     yield break;
 
-                // Traverse the CFG contextually
-                var visited = new HashSet<BasicBlock>();
-                var queue = new Queue<BasicBlock>();
-                queue.Enqueue(cfg.Blocks[0]); // Start at the Entry block
-
-                while (queue.Count > 0)
+                foreach (var block in cfg.TraverseCfg(knownArguments, cancellationToken))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var currentBlock = queue.Dequeue();
-
-                    // Prevent infinite loops in `while`/`for` loops
-                    if (!visited.Add(currentBlock))
-                        continue;
-
                     // Check for explicit Return operations inside the block's body
-                    foreach (var op in currentBlock.Operations)
+                    foreach (var op in block.Operations)
                     {
                         if (op is IReturnOperation returnOp && returnOp.ReturnedValue != null)
                         {
@@ -156,47 +143,11 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
                     }
 
                     // Check if the branch itself is a return (common in Roslyn CFGs)
-                    if (currentBlock.FallThroughSuccessor?.Semantics == ControlFlowBranchSemantics.Return &&
-                        currentBlock.BranchValue != null)
+                    if (block.FallThroughSuccessor?.Semantics == ControlFlowBranchSemantics.Return &&
+                        block.BranchValue != null)
                     {
-                        foreach (var res in ResolveReturnedValue(currentBlock.BranchValue, semanticModel, cfg, knownArguments, callStack, maxCallStackDepth, cancellationToken))
+                        foreach (var res in ResolveReturnedValue(block.BranchValue, semanticModel, cfg, knownArguments, callStack, maxCallStackDepth, cancellationToken))
                             yield return res;
-                    }
-
-                    // Evaluate branching based on our known arguments
-                    if (currentBlock.ConditionalSuccessor != null)
-                    {
-                        bool? conditionResult = EvaluateCondition(currentBlock.BranchValue, knownArguments);
-
-                        // If ConditionKind is JumpIfTrue, and result is true, we take the ConditionalSuccessor.
-                        // If result is unknown (null), we must traverse BOTH paths.
-                        bool jumpWhen = currentBlock.ConditionKind == ControlFlowConditionKind.WhenTrue;
-
-                        if (conditionResult == null)
-                        {
-                            // Unknown condition, traverse both
-                            if (currentBlock.ConditionalSuccessor.Destination != null)
-                                queue.Enqueue(currentBlock.ConditionalSuccessor.Destination);
-                            if (currentBlock.FallThroughSuccessor?.Destination != null)
-                                queue.Enqueue(currentBlock.FallThroughSuccessor.Destination);
-                        }
-                        else if (conditionResult == jumpWhen)
-                        {
-                            // Condition matches the jump requirement
-                            if (currentBlock.ConditionalSuccessor.Destination != null)
-                                queue.Enqueue(currentBlock.ConditionalSuccessor.Destination);
-                        }
-                        else
-                        {
-                            // Condition fails the jump requirement, fall through
-                            if (currentBlock.FallThroughSuccessor?.Destination != null)
-                                queue.Enqueue(currentBlock.FallThroughSuccessor.Destination);
-                        }
-                    }
-                    else if (currentBlock.FallThroughSuccessor?.Destination != null)
-                    {
-                        // Unconditional branch
-                        queue.Enqueue(currentBlock.FallThroughSuccessor.Destination);
                     }
                 }
             }
@@ -254,84 +205,25 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
                 if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                     yield break;
 
-                // Traverse the CFG contextually
-                // Track visited states. We track BOTH the block and the current operation 
-                // to prevent infinite loops while still allowing different paths to reach 
-                // the same block with different assigned out-values.
-                var visited = new HashSet<BasicBlock>();
-                // Queue tracks the block AND the last assigned value to our out parameter on this path
-                var queue = new Queue<(BasicBlock Block, IOperation? CurrentOutValue)>();
-                queue.Enqueue((cfg.Blocks[0], null)); // Start at the Entry block
+                var variableFlow = VariableFlowAnalysis.RunAnalysis(
+                    targetMethod,
+                    cfg,
+                    semanticModel,
+                    knownArguments,
+                    cancellationToken);
+                if (variableFlow == null)
+                    yield break;
 
-                while (queue.Count > 0)
+                var possibleOutValues = variableFlow.GetPossibleExitValues(outArgument)
+                    .ToArray();
+                // Only continue if all last assignment operations are know
+                if (possibleOutValues.Any(x => x == null))
+                    yield break;
+
+                foreach (var possibleOutValue in possibleOutValues)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var (currentBlock, currentOutValue) = queue.Dequeue();
-
-                    // If we reached the method exit, yield the last assigned value for this path
-                    if (currentBlock.Kind == BasicBlockKind.Exit)
-                    {
-                        if (currentOutValue != null)
-                        {
-                            foreach (var result in ResolveReturnedValue(currentOutValue, semanticModel, cfg, knownArguments, callStack, maxCallStackDepth, cancellationToken))
-                                yield return result;
-                        }
-                        continue;
-                    }
-
-                    // Prevent infinite loops in `while`/`for` loops
-                    if (!visited.Add(currentBlock))
-                        continue;
-
-                    // Check for assignments to our target out-parameter in this block
-                    foreach (IOperation op in currentBlock.Operations)
-                    {
-                        // Unwrap the assignment if it's inside a statement
-                        var assignment = op.FindAssignmentTarget(targetParameter);
-                        if (assignment?.Target is IParameterReferenceOperation paramRef &&
-                            SymbolEqualityComparer.Default.Equals(paramRef.Parameter, targetParameter))
-                        {
-                            // Update our tracked value for this path
-                            currentOutValue = assignment.Value.Value;
-                        }
-                    }
-
-                    // Evaluate branching based on our known arguments
-                    if (currentBlock.ConditionalSuccessor != null)
-                    {
-                        bool? conditionResult = EvaluateCondition(currentBlock.BranchValue, knownArguments);
-
-                        // If ConditionKind is JumpIfTrue, and result is true, we take the ConditionalSuccessor.
-                        // If result is unknown (null), we must traverse BOTH paths.
-                        bool jumpWhen = currentBlock.ConditionKind == ControlFlowConditionKind.WhenTrue;
-
-                        if (conditionResult == null)
-                        {
-                            // Unknown condition, traverse both
-                            if (currentBlock.ConditionalSuccessor.Destination != null)
-                                queue.Enqueue((currentBlock.ConditionalSuccessor.Destination, currentOutValue));
-                            if (currentBlock.FallThroughSuccessor?.Destination != null)
-                                queue.Enqueue((currentBlock.FallThroughSuccessor.Destination, currentOutValue));
-                        }
-                        else if (conditionResult == jumpWhen)
-                        {
-                            // Condition matches the jump requirement
-                            if (currentBlock.ConditionalSuccessor.Destination != null)
-                                queue.Enqueue((currentBlock.ConditionalSuccessor.Destination, currentOutValue));
-                        }
-                        else
-                        {
-                            // Condition fails the jump requirement, fall through
-                            if (currentBlock.FallThroughSuccessor?.Destination != null)
-                                queue.Enqueue((currentBlock.FallThroughSuccessor.Destination, currentOutValue));
-                        }
-                    }
-                    else if (currentBlock.FallThroughSuccessor?.Destination != null)
-                    {
-                        // Unconditional branch
-                        queue.Enqueue((currentBlock.FallThroughSuccessor.Destination, currentOutValue));
-                    }
+                    foreach (var res in ResolveReturnedValue(possibleOutValue, semanticModel, cfg, outerArguments, callStack, maxCallStackDepth, cancellationToken))
+                        yield return res;
                 }
             }
             finally
