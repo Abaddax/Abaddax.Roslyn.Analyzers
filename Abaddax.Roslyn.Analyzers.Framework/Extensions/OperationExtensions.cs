@@ -45,32 +45,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
             }
         }
 
-
-        /// <summary>
-        /// Helper method to verify the <paramref name="assignment"/> target matches <paramref name="targetSymbol"/>
-        /// </summary>
-        public static bool IsTargetMatch(this IOperation assignment, ISymbol targetSymbol)
-        {
-            ISymbol? symbol = GetTarget(assignment);
-            if (symbol == null)
-                return false;
-            return SymbolEqualityComparer.Default.Equals(symbol, targetSymbol);
-
-            static ISymbol? GetTarget(IOperation? operation)
-            {
-                return operation switch
-                {
-                    IAssignmentOperation assignment => GetTarget(assignment.Target),
-                    ILocalReferenceOperation localRef => localRef.Local,
-                    IFieldReferenceOperation fieldRef => fieldRef.Field,
-                    IPropertyReferenceOperation propRef => propRef.Property,
-                    IParameterReferenceOperation paramRef => paramRef.Parameter,
-                    IDeclarationExpressionOperation declaration => GetTarget(declaration.ChildOperations.ExactlyOneOrDefault()),
-                    _ => null
-                };
-            }
-        }
-
         public static TOperation? FindParent<TOperation>(this IOperation operation, bool includeSelf = true)
             where TOperation : class, IOperation
         {
@@ -96,30 +70,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
                     yield return foundChild;
             }
         }
-
-        public static (IOperation Target, IOperation Value)? FindAssignmentTarget(this IOperation operation, ISymbol targetSymbol)
-        {
-            // Unwrap the assignment if it's inside a statement
-            (IOperation? target, IOperation? value) = operation switch
-            {
-                IAssignmentOperation a => (a.Target, a.Value),
-                IExpressionStatementOperation exprStatement => exprStatement.Operation.FindAssignmentTarget(targetSymbol) ?? (null!, null!),
-                IInvocationOperation invocation => invocation.Arguments
-                    .Where(x => x.Parameter?.RefKind is RefKind.Out or RefKind.Ref)
-                    .Where(x => x.Value.IsTargetMatch(targetSymbol))
-                    .Select(x => (x.Value, x.Value))
-                    .LastOrDefault(),
-                _ => (null, null)
-            };
-            if (target == null || value == null)
-                return null;
-            if (target.IsTargetMatch(targetSymbol))
-                return (target, value);
-            return null;
-        }
-
-
-
 
     }
 }
