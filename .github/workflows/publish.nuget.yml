@@ -8,7 +8,17 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish_analyzer_nuget: 
+  publish_framework_nuget:
+    uses: Abaddax/workflows/.github/workflows/dotnet.publish_nuget.yml@master
+    with:
+      CSPROJ_PATH: Abaddax.Roslyn.Analyzers.Framework/Abaddax.Roslyn.Analyzers.Framework.csproj
+      CREATE_TAG: false
+    permissions:
+      contents: write
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+  publish_analyzer_nuget:
+    needs: [publish_framework_nuget]
     uses: Abaddax/workflows/.github/workflows/dotnet.publish_nuget.yml@master
     with:
       CSPROJ_PATH: Abaddax.Roslyn.Analyzers.Package/Abaddax.Roslyn.Analyzers.Package.csproj
