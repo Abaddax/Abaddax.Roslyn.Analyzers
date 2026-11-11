@@ -11,7 +11,8 @@ jobs:
     name: Check version change
     runs-on: 'ubuntu-latest'
     steps:
-      - uses: Abaddax/workflows/dotnet/actions/check-version.yml@master
+      - name: Check version change
+        uses: Abaddax/workflows/dotnet/actions/check-version.yml@master
         with:
           CSPROJ_PATH: Directory.Build.props
       
@@ -25,6 +26,7 @@ jobs:
     if: needs.check_version.outputs.version_changed == 'true'
     uses: ./.github/workflows/publish.nuget.yml
     permissions:
+      id-token: write
       contents: write
     secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      NUGET_USER: ${{ secrets.NUGET_USER }}
