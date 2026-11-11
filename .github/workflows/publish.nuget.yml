@@ -2,37 +2,59 @@ name: Publish NuGet-Package
 
 on:
   workflow_call:
-    secrets:
-      NUGET_API_KEY:
-        required: true
+    permissions:
+      id-token: write
   workflow_dispatch:
 
 jobs:
-  publish_framework_nuget:
-    uses: Abaddax/workflows/.github/workflows/dotnet.publish_nuget.yml@master
-    with:
-      CSPROJ_PATH: Abaddax.Roslyn.Analyzers.Framework/Abaddax.Roslyn.Analyzers.Framework.csproj
-      CREATE_TAG: false
+  publish_nuget:
+    name: Publish NuGet-Package
+    runs-on: ubuntu-latest 
     permissions:
       contents: write
-    secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-  publish_analyzer_nuget:
-    needs: [publish_framework_nuget]
-    uses: Abaddax/workflows/.github/workflows/dotnet.publish_nuget.yml@master
-    with:
-      CSPROJ_PATH: Abaddax.Roslyn.Analyzers.Package/Abaddax.Roslyn.Analyzers.Package.csproj
-    permissions:
-      contents: write
-    secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-  publish_attributes_nuget:
-    needs: [publish_analyzer_nuget]
-    uses: Abaddax/workflows/.github/workflows/dotnet.publish_nuget.yml@master
-    with:
-      CSPROJ_PATH: Abaddax.Roslyn.Analyzers.Attributes/Abaddax.Roslyn.Analyzers.Attributes.csproj
-      CREATE_TAG: false
-    permissions:
-      contents: write
-    secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+         dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+      # Abaddax.Roslyn.Analyzers
+      - name: Authenticate with NuGet Trusted Publishing
+        id: trusted_publishing_analyzer
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      - name: Publish Abaddax.Roslyn.Analyzers
+        uses: Abaddax/workflows/dotnet/actions/publish-nuget@master
+        with:
+          CSPROJ_PATH: Abaddax.Roslyn.Analyzers.Package/Abaddax.Roslyn.Analyzers.Package.csproj
+          NUGET_API_KEY: ${{ steps.trusted_publishing_analyzer.outputs.NUGET_API_KEY }}
+      # Abaddax.Roslyn.Analyzers.Attributes
+      - name: Authenticate with NuGet Trusted Publishing
+        id: trusted_publishing_attributes
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      - name: Publish Abaddax.Roslyn.Analyzers.Attributes
+        uses: Abaddax/workflows/dotnet/actions/publish-nuget@master
+        with:
+          CSPROJ_PATH: Abaddax.Roslyn.Analyzers.Attributes/Abaddax.Roslyn.Analyzers.Attributes.csproj
+          CREATE_TAG: false
+          NUGET_API_KEY: ${{ steps.trusted_publishing_attributes.outputs.NUGET_API_KEY }}
+      # Abaddax.Roslyn.Analyzers.Framework
+      - name: Authenticate with NuGet Trusted Publishing
+        id: trusted_publishing_framework
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      - name: Publish Abaddax.Roslyn.Analyzers.Framework
+        uses: Abaddax/workflows/dotnet/actions/publish-nuget@master
+        with:
+          CSPROJ_PATH: Abaddax.Roslyn.Analyzers.Framework/Abaddax.Roslyn.Analyzers.Framework.csproj
+          CREATE_TAG: false
+          NUGET_API_KEY: ${{ steps.trusted_publishing_framework.outputs.NUGET_API_KEY }}
+
+      

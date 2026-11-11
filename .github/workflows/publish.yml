@@ -7,10 +7,13 @@ on:
       - "**/*.props"
 
 jobs:
-  check_version:    
-    uses: Abaddax/workflows/.github/workflows/dotnet.check_version.yml@master
-    with:
-      CSPROJ_PATH: Directory.Build.props
+  check_version:
+    name: Check version change
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: Abaddax/workflows/dotnet/actions/check-version.yml@master
+        with:
+          CSPROJ_PATH: Directory.Build.props
       
   ci:    
     needs: [check_version]

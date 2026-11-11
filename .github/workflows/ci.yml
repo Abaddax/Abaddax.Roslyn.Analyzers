@@ -8,5 +8,16 @@ on:
   workflow_call:
 
 jobs:
-  build:    
-    uses: Abaddax/workflows/.github/workflows/dotnet.build_and_test.yml@master
+  build:
+    name: Build and test
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+         dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+      - uses: Abaddax/workflows/dotnet/actions/build-and-test@master
