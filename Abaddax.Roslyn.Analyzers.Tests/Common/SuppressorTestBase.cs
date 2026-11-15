@@ -1,3 +1,4 @@
+using Abaddax.Roslyn.Analyzers.Framework.Tests.Common;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -23,21 +24,30 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Common
         }
 
 #pragma warning disable ABX0001 // Async method should accept CancellationToken
-        protected Task VerifySuppressorAsync([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
+        protected Task VerifySuppressorAsync(
+            [StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
             params DiagnosticResult[] expected)
         {
-            return VerifySuppressorAsync(source, (_) => { }, expected);
+            return VerifySuppressorAsync(
+                source,
+                (_) => { },
+                expected);
         }
-        protected Task VerifySuppressorAsync([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
+        protected Task VerifySuppressorAsync(
+            [StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
             OutputKind? outputKind,
             params DiagnosticResult[] expected)
         {
-            return VerifySuppressorAsync(source, state =>
-            {
-                state.OutputKind = outputKind;
-            }, expected);
+            return VerifySuppressorAsync(
+                source,
+                state =>
+                {
+                    state.OutputKind = outputKind;
+                },
+                expected);
         }
-        protected async Task VerifySuppressorAsync([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
+        protected async Task VerifySuppressorAsync(
+            [StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
             Action<SolutionState> configureTestState,
             params DiagnosticResult[] expected)
         {

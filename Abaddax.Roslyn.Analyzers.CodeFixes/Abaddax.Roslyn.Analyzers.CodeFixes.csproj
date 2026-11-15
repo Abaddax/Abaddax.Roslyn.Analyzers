@@ -6,6 +6,7 @@
     <IsPackable>false</IsPackable>
     <RootNamespace>Abaddax.Roslyn.Analyzers.CodeFixes</RootNamespace>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <WarningsAsErrors>$(WarningsAsErrors);VSTHRD111</WarningsAsErrors>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(Configuration)=='Debug'">

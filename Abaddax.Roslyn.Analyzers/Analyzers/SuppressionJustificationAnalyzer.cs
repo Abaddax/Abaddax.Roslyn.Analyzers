@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 
 namespace Abaddax.Roslyn.Analyzers.Analyzers
 {
@@ -34,6 +35,11 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             context.RegisterSyntaxTreeAction(AnalyzePragmas);
         }
 
+        // VisualStudio generates '[SuppressMessage("{Category}", "{DiagnosticId}:{Description}", Justification = "<pending>")' by default
+        // -> skip default justification
+        private static readonly Regex _DefaultJustificationRegex = new Regex(
+            @"^<.*>$",
+            RegexOptions.Compiled, Timeout.InfiniteTimeSpan);
         private static void AnalyzeAttribute(SyntaxNodeAnalysisContext context)
         {
             var attribute = (AttributeSyntax)context.Node;
@@ -53,7 +59,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                 .Select(x => x.Value.ConstantValue.Value as string)
                 .FirstOrDefault();
 
-            if (string.IsNullOrWhiteSpace(justification))
+            if (string.IsNullOrWhiteSpace(justification) || _DefaultJustificationRegex.IsMatch(justification))
             {
                 // Missing justification.
                 var checkId = attributeArgs.OfType<IArgumentOperation>()
@@ -61,6 +67,8 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
                     .Where(x => x.Value.ConstantValue.HasValue)
                     .Select(x => x.Value.ConstantValue.Value as string)
                     .FirstOrDefault();
+                // VisualStudio generates '[SuppressMessage("{Category}", "{DiagnosticId}:{Description}", Justification = "<pending>")' by default
+                // -> extract the diagnostic-id
                 if (checkId != null && checkId.Contains(":"))
                     checkId = checkId.Split(':')[0];
                 if (string.IsNullOrWhiteSpace(checkId))

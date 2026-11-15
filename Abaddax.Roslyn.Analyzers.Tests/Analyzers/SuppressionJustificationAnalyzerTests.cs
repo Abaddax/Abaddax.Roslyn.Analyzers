@@ -130,6 +130,31 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
 
             await VerifyAnalyzerAsync(source);
         }
+        [Test]
+        public async Task ShouldReportIfJustificationIsDefaultTemplate()
+        {
+            var source =
+               """
+                using System.Diagnostics.CodeAnalysis;
 
+                namespace TestNamespace
+                {
+                    public class Test<T>
+                    {
+                        [{|#0:SuppressMessage("Test", "ABC123:This is a Test diagnostic", Justification = "<pending>")|}]
+                        public void Func()
+                        {
+
+                        }
+                    }
+                }
+                """;
+
+            await VerifyAnalyzerAsync(source,
+                new DiagnosticResult(AnalyzerIdentifiers.SuppressionJustificationAnalyzer, DiagnosticSeverity.Warning)
+                    .WithLocation(0)
+                    .WithArguments("ABC123")
+            );
+        }
     }
 }

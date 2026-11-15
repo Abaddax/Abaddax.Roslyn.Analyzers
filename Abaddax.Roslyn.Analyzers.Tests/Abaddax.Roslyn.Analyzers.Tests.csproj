@@ -47,6 +47,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.Attributes\Abaddax.Roslyn.Analyzers.Attributes.csproj" />
+    <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.Framework.Tests\Abaddax.Roslyn.Analyzers.Framework.Tests.csproj" />
     <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.CodeFixes\Abaddax.Roslyn.Analyzers.CodeFixes.csproj" />
     <ProjectReference Include="..\Abaddax.Roslyn.Analyzers\Abaddax.Roslyn.Analyzers.csproj" />
   </ItemGroup>

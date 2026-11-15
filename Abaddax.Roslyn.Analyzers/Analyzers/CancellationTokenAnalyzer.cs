@@ -47,6 +47,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             // Skip methods that already have a CancellationToken
             if (method.Parameters.Any(p => p.Type.HasName("CancellationToken", "System.Threading")))
                 return;
+            // Skip sync methods
             if (!method.IsTaskedMethodDeclaration())
                 return;
 
