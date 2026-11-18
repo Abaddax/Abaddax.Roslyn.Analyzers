@@ -35,7 +35,7 @@ jobs:
           CSPROJ_PATH: Abaddax.Roslyn.Analyzers.Package/Abaddax.Roslyn.Analyzers.Package.csproj
           NUGET_API_KEY: ${{ steps.trusted_publishing.outputs.NUGET_API_KEY }}
   publish_attributes_nuget:
-    name: Publish Framework NuGet-Package
+    name: Publish Attributes NuGet-Package
     needs: [publish_analyzer_nuget]
     runs-on: ubuntu-latest
     permissions:
