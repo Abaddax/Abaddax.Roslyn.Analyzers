@@ -22,6 +22,14 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (!semanticModel.HasSameSyntaxTree(expression))
+            {
+                var newSemanticModel = semanticModel.TryGetSemanticModelFor(expression);
+                if (newSemanticModel == null)
+                    return expression;
+                semanticModel = newSemanticModel;
+            }
+
             var targetSymbol = semanticModel.GetSymbolInfo(expression, cancellationToken).Symbol;
             if (targetSymbol == null)
                 return expression;
@@ -32,6 +40,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin
 
             var lastAssignment = MethodFlowAnalysis.TraverseAssignments(operation, semanticModel, cancellationToken,
                 onTraverseCallback: onTraverseCallback);
+            // Break infinite recursion
             if (lastAssignment == null || expression == lastAssignment.Syntax)
                 return expression;
 
@@ -68,6 +77,14 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin
                 onTraverseCallback: onTraverseCallback)
                 .IgnoreCasts()
                 .IgnoreNullSuppression();
+
+            if (!semanticModel.HasSameSyntaxTree(expression))
+            {
+                var newSemanticModel = semanticModel.TryGetSemanticModelFor(expression);
+                if (newSemanticModel == null)
+                    return null;
+                semanticModel = newSemanticModel;
+            }
 
             switch (expression)
             {

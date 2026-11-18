@@ -17,7 +17,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             messageFormat: "Consider using '{0}Async' instead of '{0}' inside async functions",
             category: "AsyncUsage",
             defaultSeverity: DiagnosticSeverity.Info,
-            isEnabledByDefault: true,
+            isEnabledByDefault: false,
             helpLinkUri: AnalyzerIdentifiers.GetAnalyzerHelpUri(AnalyzerIdentifiers.PreferAsyncOverloadAnalyzer));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; }

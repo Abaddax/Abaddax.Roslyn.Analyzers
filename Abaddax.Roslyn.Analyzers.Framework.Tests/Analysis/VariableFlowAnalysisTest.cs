@@ -4,6 +4,7 @@ using Abaddax.Roslyn.Analyzers.Framework.Extensions;
 using Abaddax.Roslyn.Analyzers.Framework.Tests.Common;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using NUnit.Framework;
 using System.Diagnostics.CodeAnalysis;
 
@@ -1411,6 +1412,50 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             Assert.That(value2, Is.Not.Null);
 
             Assert.That(value1.IsEquivalentTo(value2), Is.False);
+        }
+        [Test]
+        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("LocalFunction")]
+        public void ShouldProcessFunctionResultToArgumentSameValueAssignment()
+        {
+            var operation = Process(""""
+                using System;
+
+                public class Test
+                {
+                    void Func()
+                    {
+                        var y = 1;
+                        y = Inc([|y|]);
+                        
+                    }
+                    int Inc(int a) => a +1;
+                }
+                """",
+                out var semanticModel,
+                out var methodBody);
+
+            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
+               methodBody,
+               semanticModel,
+               null,
+               default);
+            Assert.That(flowAnalysis, Is.Not.Null);
+
+            var state = flowAnalysis.TryGetState(operation);
+            Assert.That(state, Is.Not.Null);
+
+            var t = operation.GetType();
+            var x = flowAnalysis.GetPossibleLastValues(operation);
+
+            var path = VariableFlowAnalysis.BuildAccessPath(((IArgumentOperation)operation).Value);
+            Assert.That(path.ToString(), Is.EqualTo("y").IgnoreWhiteSpace);
+            var value = state.Environment[path.Root] as ValueTypeValue;
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value.Fields, Is.Empty);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]

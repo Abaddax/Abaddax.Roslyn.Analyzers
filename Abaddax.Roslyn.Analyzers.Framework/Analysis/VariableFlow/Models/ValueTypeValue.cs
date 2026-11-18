@@ -13,7 +13,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
     /// </remarks>
     internal sealed class ValueTypeValue : IAbstractValue
     {
-        public static readonly ValueTypeValue Empty = new(ImmutableDictionary<AccessSymbol, IAbstractValue>.Empty);
+        public static readonly ValueTypeValue Empty = new(ImmutableDictionary<AccessSymbol, IAbstractValue>.Empty.WithComparers(AccessSymbol.EqualityComparer));
 
         public ImmutableHashSet<IOperation> PossibleValues { get; }
         public ImmutableDictionary<AccessSymbol, IAbstractValue> Fields { get; }
@@ -24,9 +24,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
             Fields = fields?.WithComparers(AccessSymbol.EqualityComparer) ?? throw new ArgumentNullException(nameof(fields));
         }
         public ValueTypeValue(IOperation value)
-            : this([value ?? throw new ArgumentNullException(nameof(value))], ImmutableDictionary<AccessSymbol, IAbstractValue>.Empty) { }
+            : this(ImmutableHashSet.Create(value).WithComparer(OperationEqualityComparer.Default), ImmutableDictionary<AccessSymbol, IAbstractValue>.Empty.WithComparers(AccessSymbol.EqualityComparer)) { }
         public ValueTypeValue(ImmutableDictionary<AccessSymbol, IAbstractValue> fields)
-            : this(ImmutableHashSet<IOperation>.Empty, fields) { }
+            : this(ImmutableHashSet<IOperation>.Empty.WithComparer(OperationEqualityComparer.Default), fields) { }
 
         /// <summary>
         /// Recursively clone all fields so mutations to 'y' don't affect 'x'
@@ -59,7 +59,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
                 if (otherVal.Fields.TryGetValue(key, out var field2))
                 {
                     if (Fields.TryGetValue(key, out var field1))
+                    {
                         mergeFields[key] = field1!.Merge(field2);
+                    }
                     else
                     {
                         mergeFields[key] = field2;

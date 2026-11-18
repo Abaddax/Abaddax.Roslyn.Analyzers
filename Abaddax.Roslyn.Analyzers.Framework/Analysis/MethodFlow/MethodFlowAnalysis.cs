@@ -694,7 +694,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
                     {
                         if (SymbolEqualityComparer.Default.Equals(invocation.TargetMethod, methodSymbol))
                             // Found, return argument caller value
-                            yield return new CallerInfo(invocation.Arguments[paramIndex].Value, null, false);
+                            yield return new CallerInfo(invocation.Arguments[paramIndex].Value, invocation, false);
                     }
                 }
                 break;

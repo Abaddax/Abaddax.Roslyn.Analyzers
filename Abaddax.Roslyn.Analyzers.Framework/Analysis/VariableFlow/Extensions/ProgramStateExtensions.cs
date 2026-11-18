@@ -122,7 +122,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Extensions
                                 var updatedVal = InvalidateRecursive(field.Value, ref state, false);
                                 updatedFields = updatedFields.SetItem(field.Key, updatedVal);
                             }
-                            heapNode = new HeapNode(allocationNode, updatedFields);
+                            heapNode = heapNode.WithFields(updatedFields);
                             state = state.WithHeap(allocationNode, heapNode);
                         }
                         return refVal;

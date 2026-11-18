@@ -92,6 +92,36 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                 );
         }
         [Test]
+        public async Task ShouldSuppressIfIncludedAsync()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public async Task FuncAsync(CancellationToken cancellationToken)
+                        {
+                            var db = new TestContext();
+
+                            var p = await db.Persons
+                                .Include(x => x.Mother)
+                                .FirstAsync(cancellationToken);
+
+                            var m = {|#0:p.Mother|}.ToString();
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true)
+                );
+        }
+        [Test]
         public async Task ShouldSuppressIfIncludedChain()
         {
             var source =
@@ -128,36 +158,6 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                 );
         }
         [Test]
-        public async Task ShouldSuppressIfIncludedAsync()
-        {
-            var source =
-                """
-                #nullable enable
-
-                namespace TestNamespace
-                {
-                    public class Test
-                    {
-                        public async Task FuncAsync(CancellationToken cancellationToken)
-                        {
-                            var db = new TestContext();
-
-                            var p = await db.Persons
-                                .Include(x => x.Mother)
-                                .FirstAsync(cancellationToken);
-
-                            var m = {|#0:p.Mother|}.ToString();
-                        }
-                    }
-                }
-                """;
-            await VerifySuppressorAsync(source,
-                DiagnosticResult.CompilerWarning("CS8602")
-                    .WithLocation(0)
-                    .WithIsSuppressed(true)
-                );
-        }
-        [Test]
         public async Task ShouldSuppressIfIncludedChainAsync()
         {
             var source =
@@ -175,6 +175,80 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                             var p = await db.Persons
                                 .Include(x => x.Mother).ThenInclude(x => {|#0:x|}.Father)
                                 .FirstAsync();
+
+                            var f = {|#2:{|#1:p.Mother|}.Father|}.ToString();
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(false),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(true),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(2)
+                    .WithIsSuppressed(true)
+                );
+        }
+        [Test]
+        public async Task ShouldSuppressIfDelayedQueryExecution()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var db = new TestContext();
+
+                            var query = db.Persons
+                                .Include(x => x.Mother).ThenInclude(x => {|#0:x|}.Father);
+
+                           var p = query.First();
+
+                            var f = {|#2:{|#1:p.Mother|}.Father|}.ToString();
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(false),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(true),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(2)
+                    .WithIsSuppressed(true)
+                );
+        }
+        [Test]
+        public async Task ShouldSuppressIfDelayedQueryExecutionAsync()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public async Task FuncAsync()
+                        {
+                            var db = new TestContext();
+
+                            var query = db.Persons
+                                .Include(x => x.Mother).ThenInclude(x => {|#0:x|}.Father);
+
+                           var p = await query.FirstAsync();
 
                             var f = {|#2:{|#1:p.Mother|}.Father|}.ToString();
                         }
@@ -430,7 +504,6 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                 );
         }
 
-
         [Test]
         public async Task ShouldSuppressIfIncludedInEnumerable()
         {
@@ -639,7 +712,78 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                     .WithIsSuppressed(false)
                 );
         }
+        [Test]
+        public async Task ShouldSuppressIfIncludedInEnumerableSelectNestedProperty()
+        {
+            var source =
+                """
+                #nullable enable
 
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public async Task FuncAsync()
+                        {
+                            var db = new TestContext();
+                            var p = await db.Persons
+                                .Include(x => x.Mother).ThenInclude(x => {|#0:x|}.Father)
+                                .ToListAsync();
+
+                            var f = p.Select(x => {|#2:{|#1:x.Mother|}.Father|}.ToString());
+                        }
+                    }
+                }
+                """;
+
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(false),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(true),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(2)
+                    .WithIsSuppressed(true)
+                );
+        }
+        [Test]
+        public async Task ShouldSuppressIfIncludedInEnumerableSelectListProperty()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public async Task FuncAsync()
+                        {
+                            var db = new TestContext();
+                            var p = await db.Persons
+                                .Include(x => x.Childs).ThenInclude(x => x.Mother).ThenInclude(x => {|#0:x|}.Father)
+                                .FirstAsync();
+
+                            var f = p.Childs.Select(x => {|#2:{|#1:x.Mother|}.Father|}.ToString());
+                        }
+                    }
+                }
+                """;
+
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(false),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(true),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(2)
+                    .WithIsSuppressed(true)
+                );
+        }
 
         [Test]
         public async Task ShouldSuppressIfVariableAssignedFromIncluded()
@@ -1008,6 +1152,46 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                     .WithIsSuppressed(false)
                 );
         }
+        [Test]
+        //TODO: Maybe only assume sure path and exclude only branched includes?
+        public async Task ShouldNotSuppressIfPartialBranchQuery()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void Func(bool includeFather)
+                        {
+                            var db = new TestContext();
+
+                            var query = db.Persons.Include(x => x.Mother);
+
+                            if (includeFather)
+                                query = query.Include(x => x.Father);
+
+                            var p = query.First();
+
+                            var ms = {|#0:p.Mother|}.ToString();
+                            var fs = {|#1:p.Father|}.ToString();
+                        }
+                    }
+                }
+                """;
+
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(false),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(false)
+                );
+        }
+
 
         [Test]
         public async Task ShouldSuppressIfNestedDbSet()
@@ -1244,7 +1428,49 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                     .WithIsSuppressed(true)
                 );
         }
+        [Test]
+        [Ignore("Unsupported at the moment")]
+        public async Task ShouldSuppressIfCustomMarkedQueryFilter()
+        {
+            var source =
+                """
+                #nullable enable
+                using Abaddax.Roslyn.Analyzers.Attributes;
 
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        [return: EfCorePropertyIncluded("Mother")]
+                        public static IQueryable<TestContext.TestEntity> IncludeMother(IQueryable<TestContext.TestEntity> source)
+                        {
+                            return source;
+                        }
+                        public void Func()
+                        {
+                            var db = new TestContext();
+
+                            IQueryable<TestContext.TestEntity> query = db.Persons
+                                .Include(x => x.Father);
+                            query = IncludeMother(query);
+                            var p = query
+                                .First();
+
+                            var m = {|#0:p.Mother|}.ToString();
+                            var f = {|#1:p.Father|}.ToString();
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(true)
+                );
+        }
         [Test]
         public async Task ShouldSuppressIfCustomMarkedForwardedLambda()
         {
@@ -1288,6 +1514,91 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                  DiagnosticResult.CompilerWarning("CS8602")
                     .WithLocation(1)
                     .WithIsSuppressed(false)
+                );
+        }
+
+        [Test]
+        [Ignore("Is this desired behavior?")]
+        public async Task ShouldSuppressIfIgnoreUnknownQueryExtension()
+        {
+            var source =
+                """
+                #nullable enable
+                using Abaddax.Roslyn.Analyzers.Attributes;
+
+                namespace TestNamespace
+                {
+                    public static class Extensions
+                    {
+                #pragma warning disable CS0626
+                        public static extern IQueryable<TestContext.TestEntity> IncludeMother(this IQueryable<TestContext.TestEntity> source);
+                #pragma warning restore CS0626
+                    }
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var db = new TestContext();
+                
+                            var p = db.Persons
+                                .Include(x => x.Father)
+                                .IncludeMother()
+                                .First();
+
+                            var m = {|#0:p.Mother|}.ToString();
+                            var f = {|#1:p.Father|}.ToString();
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(false),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(true)
+                );
+        }
+        [Test]
+        public async Task ShouldSuppressIfLocalFunctionQueryFilter()
+        {
+            var source =
+                """
+                #nullable enable
+                using Abaddax.Roslyn.Analyzers.Attributes;
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var db = new TestContext();
+                
+                            IQueryable<TestContext.TestEntity> query = db.Persons
+                                .Include(x => x.Father);
+                            query = IncludeMother(query);
+                            var p = query.First();
+
+                            var m = {|#0:p.Mother|}.ToString();
+                            var f = {|#1:p.Father|}.ToString();
+
+                            static IQueryable<TestContext.TestEntity> IncludeMother(IQueryable<TestContext.TestEntity> source)
+                            {
+                                return source.Include(x => x.Mother);
+                            }
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true),
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(1)
+                    .WithIsSuppressed(true)
                 );
         }
 

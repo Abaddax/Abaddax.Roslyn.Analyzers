@@ -11,7 +11,7 @@ namespace Abaddax.Roslyn.Analyzers.Attributes
         /// <summary>
         /// Marks the given <paramref name="propertyName"/> as included by EFCore
         /// </summary>
-        /// <param name="propertyName"><see langword="nameof"/> the included property. Is the property is a sub-property then <see langword="nameof"/>(A).<see langword="nameof"/>(A.B)</param>
+        /// <param name="propertyName"><see langword="nameof"/> the included property. If the property is a sub-property then <see langword="nameof"/>(A).<see langword="nameof"/>(A.B)</param>
         /// <exception cref="ArgumentNullException"></exception>
         public EfCorePropertyIncludedAttribute(string propertyName)
         {

@@ -8,8 +8,8 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
     internal sealed class ProgramState
     {
         public static readonly ProgramState Empty = new(
-            ImmutableDictionary<AccessPathRoot, IAbstractValue>.Empty,
-            ImmutableDictionary<AllocationNode, HeapNode>.Empty
+            ImmutableDictionary<AccessPathRoot, IAbstractValue>.Empty.WithComparers(AccessPathRoot.EqualityComparer),
+            ImmutableDictionary<AllocationNode, HeapNode>.Empty.WithComparers(AllocationNode.EqualityComparer)
         );
 
         /// <summary>
@@ -40,7 +40,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
             foreach (var stackVariable2 in state2.Environment)
             {
                 if (mergedEnvironment.TryGetValue(stackVariable2.Key, out var stackVariable1))
+                {
                     mergedEnvironment[stackVariable2.Key] = stackVariable1.Merge(stackVariable2.Value);
+                }
                 else
                 {
                     mergedEnvironment.Add(stackVariable2);
@@ -57,13 +59,15 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
                     foreach (var field2 in heapNode2.Value.Fields)
                     {
                         if (mergedFields.TryGetValue(field2.Key, out var field1))
+                        {
                             mergedFields[field2.Key] = field1.Merge(field2.Value);
+                        }
                         else
                         {
                             mergedFields.Add(field2);
                         }
                     }
-                    mergedHeap[heapNode2.Key] = new HeapNode(heapNode2.Value.Allocation, mergedFields.ToImmutable());
+                    mergedHeap[heapNode2.Key] = heapNode2.Value.WithFields(mergedFields.ToImmutable());
                 }
                 else
                 {

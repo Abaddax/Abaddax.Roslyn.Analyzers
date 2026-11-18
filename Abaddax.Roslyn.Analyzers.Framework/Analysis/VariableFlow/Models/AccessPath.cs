@@ -4,6 +4,30 @@ using System.Text;
 
 namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
 {
+    file sealed class AccessPathEqualityComparer : IEqualityComparer<AccessPath>
+    {
+        public bool Equals(AccessPath x, AccessPath y)
+        {
+            if (!AccessPathRoot.EqualityComparer.Equals(x.Root, y.Root))
+                return false;
+            if (x.Members.Length != y.Members.Length)
+                return false;
+            for (int i = 0; i < x.Members.Length; i++)
+            {
+                if (!AccessSymbol.EqualityComparer.Equals(x.Members[i], y.Members[i]))
+                    return false;
+            }
+            return true;
+        }
+        public int GetHashCode(AccessPath obj)
+        {
+            //Generate hash using ValueTuple
+            return (
+                    AccessPathRoot.EqualityComparer.GetHashCode(obj.Root),
+                    obj.Members.Length
+                ).GetHashCode();
+        }
+    }
     /// <summary>
     /// The chain of member accesses starting from a root variable symbol.
     /// </summary>
@@ -12,6 +36,8 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
     /// </remarks>
     internal readonly struct AccessPath
     {
+        public static readonly IEqualityComparer<AccessPath> EqualityComparer = new AccessPathEqualityComparer();
+
         public AccessPathRoot Root { get; }
         public ImmutableArray<AccessSymbol> Members { get; }
 

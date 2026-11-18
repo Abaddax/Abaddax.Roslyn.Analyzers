@@ -16,7 +16,19 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
             Fields = fields?.WithComparers(AccessSymbol.EqualityComparer) ?? throw new ArgumentNullException(nameof(fields));
         }
 
-        public static HeapNode Create(AllocationNode allocation) => new HeapNode(allocation, ImmutableDictionary<AccessSymbol, IAbstractValue>.Empty);
+        public static HeapNode Create(AllocationNode allocation)
+        {
+            return new HeapNode(
+                allocation,
+                ImmutableDictionary<AccessSymbol, IAbstractValue>.Empty.WithComparers(AccessSymbol.EqualityComparer));
+        }
+        public HeapNode WithFields(ImmutableDictionary<AccessSymbol, IAbstractValue> fields)
+        {
+            return new HeapNode(
+                Allocation,
+                fields.WithComparers(AccessSymbol.EqualityComparer));
+        }
+
         public IAbstractValue? TryGetField(AccessSymbol field)
         {
             if (Fields.TryGetValue(field, out var pointsTo))

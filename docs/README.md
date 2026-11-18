@@ -5,7 +5,7 @@
 | -- | -------- | ----------- | :--------------: | :----------------: | :------: | :----------: |
 | [ABX0001](./Analyzers/ABX0001.md) | AsyncUsage | Async method should accept CancellationToken | <span title='Warning'>⚠️</span> | ✔️ | ✔️ | ✔️ |
 | [ABX0002](./Analyzers/ABX0002.md) | AsyncUsage | Async method should end with 'Async' | <span title='Info'>ℹ️</span> | ✔️ | ✔️ | ✔️ |
-| [ABX0003](./Analyzers/ABX0003.md) | AsyncUsage | Use async overload in async function | <span title='Info'>ℹ️</span> | ✔️ | <span title='Planned'>📋</span> | ❌ |
+| [ABX0003](./Analyzers/ABX0003.md) | AsyncUsage | Use async overload in async function | <span title='Info'>ℹ️</span> | ❌ | <span title='Planned'>📋</span> | ❌ |
 | [ABX0004](./Analyzers/ABX0004.md) | AsyncUsage | Use async EF Core methods inside async function | <span title='Warning'>⚠️</span> | ✔️ | <span title='Planned'>📋</span> | ❌ |
 | [ABX0005](./Analyzers/ABX0005.md) | Style | Explicitly qualify the tracking behavior when using EF Core | <span title='Info'>ℹ️</span> | ✔️ | <span title='Planned'>📋</span> | ❌ |
 | [ABX0006](./Analyzers/ABX0006.md) | Reliability | Unconditional self recursion | <span title='Error'>❌</span> | ✔️ | ❌ | ❌ |

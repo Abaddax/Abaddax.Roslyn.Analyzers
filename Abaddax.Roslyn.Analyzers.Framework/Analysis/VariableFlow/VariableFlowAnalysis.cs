@@ -121,10 +121,22 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
                     blockInStates[block] = currentState;
 
                     // Execute transfer functions for every operation inside this basic block
+                    VariableFlowTransferState transferState = VariableFlowTransferState.Empty;
                     foreach (var operation in block.GetOperations())
                     {
-                        currentState = TransferOperation(analysisContext, currentState, operation, cancellationToken, out _);
+                        currentState = TransferOperation(analysisContext, currentState, operation, cancellationToken, out var nestedTransferState);
                         states[operation] = currentState;
+                        transferState = VariableFlowTransferState.Merge(transferState, nestedTransferState);
+                    }
+                    // Merge transfer state into states
+                    foreach (var nestedOperationState in transferState.NestedOperationStates)
+                    {
+                        var nestedState = nestedOperationState.Value;
+                        if (states.TryGetValue(nestedOperationState.Key, out var currentNestedState))
+                        {
+                            nestedState = ProgramState.Merge(currentNestedState, nestedState);
+                        }
+                        states[nestedOperationState.Key] = nestedState;
                     }
 
                     // Check if Out-state changed. If yes, add successors back to the worklist.
@@ -155,24 +167,24 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             ProgramState state,
             IOperation operation,
             CancellationToken cancellationToken,
-            out IEnumerable<AccessPath> pathsWritten)
+            out VariableFlowTransferState transferState)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            pathsWritten = [];
+            transferState = VariableFlowTransferState.Empty;
             return operation switch
             {
                 // Unwrap statement
-                IExpressionStatementOperation statement => TransferOperation(analysisContext, state, statement.Operation, cancellationToken, out pathsWritten),
+                IExpressionStatementOperation statement => TransferOperation(analysisContext, state, statement.Operation, cancellationToken, out transferState),
                 // Deconstruct Assignments (x, y) = (1, 2);
-                IDeconstructionAssignmentOperation deconstruct => HandleDeconstructAssignment(analysisContext, state, deconstruct, cancellationToken, out pathsWritten),
+                IDeconstructionAssignmentOperation deconstruct => HandleDeconstructAssignment(analysisContext, state, deconstruct, cancellationToken, out transferState),
                 // Variable Declaration or Assignment (e.g., x = new Foo(); or y = x;)
-                IAssignmentOperation assign => HandleAssignment(analysisContext, state, assign, cancellationToken, out pathsWritten),
+                IAssignmentOperation assign => HandleAssignment(analysisContext, state, assign, cancellationToken, out transferState),
                 // Invocation (e.g. x.Func(); x.Func(out var y);)
-                IInvocationOperation invocation => HandleInvocation(analysisContext, state, invocation, cancellationToken, out pathsWritten),
+                IInvocationOperation invocation => HandleInvocation(analysisContext, state, invocation, cancellationToken, out transferState),
                 // FlowCaptures (automatic CFG temporary values)
-                IFlowCaptureOperation flowCapture => HandleFlowCapture(analysisContext, state, flowCapture, cancellationToken, out pathsWritten),
+                IFlowCaptureOperation flowCapture => HandleFlowCapture(analysisContext, state, flowCapture, cancellationToken, out transferState),
                 // Postfix/Prefix increment/decrement (e.g x++;)
-                IIncrementOrDecrementOperation incrementOrDecrement => HandleIncrementOrDecrement(analysisContext, state, incrementOrDecrement, cancellationToken, out pathsWritten),
+                IIncrementOrDecrementOperation incrementOrDecrement => HandleIncrementOrDecrement(analysisContext, state, incrementOrDecrement, cancellationToken, out transferState),
                 // TODO: Add handlers for other operation types if needed
                 _ => state
             };
@@ -184,8 +196,10 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             IOperation value,
             ITypeSymbol? targetType,
             CancellationToken cancellationToken,
-            out IAbstractValue abstractValue)
+            out IAbstractValue abstractValue,
+            out VariableFlowTransferState transferState)
         {
+            transferState = VariableFlowTransferState.Empty;
             // Source (Right-hand side, e.g., 'new Foo()', 'y', or 'y.Prop')
             switch (value.IgnoreCasts())
             {
@@ -217,37 +231,44 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
                 }
                 case ITupleOperation { Type: INamedTypeSymbol { IsValueType: true } tupleType } tuple:
                 {
+                    var currentTransferState = transferState;
                     // Evaluate source values
                     var sourceTupleValues = tuple.Elements.Select((tupleElement, index) =>
                     {
                         var tupleElementType = tupleType.TupleElements[index];
                         //state = TransferOperation(state, tupleElement, cancellationToken);
                         state = GetAbstractValue(analysisContext, state, tupleElement, tupleElement.Type, cancellationToken,
-                            out var tupleElementValue);
+                            out var tupleElementValue,
+                            out var nestedTransferState);
+                        currentTransferState = VariableFlowTransferState.Merge(currentTransferState, nestedTransferState);
                         return (tupleElement, tupleElementType, tupleElementValue);
                     });
                     abstractValue = new ValueTypeValue(sourceTupleValues.ToImmutableDictionary(
                             x => new AccessSymbol(x.tupleElementType, x.tupleElement),
                             y => y.tupleElementValue));
+                    transferState = VariableFlowTransferState.Merge(transferState, currentTransferState);
                     return state;
                 }
                 // Multiple inline chained assignments: x = y = 1;
                 case IAssignmentOperation nestedAssignment:
                 {
-                    state = HandleAssignment(analysisContext, state, nestedAssignment, cancellationToken, out _);
+                    state = HandleAssignment(analysisContext, state, nestedAssignment, cancellationToken, out var nestedTransferState);
+                    transferState = VariableFlowTransferState.Merge(transferState, nestedTransferState);
                     value = nestedAssignment.Target;
                     goto default; //Proceed with assignment
                 }
                 // Assignment to the result of an invocation: x = Func(out var y)
                 case IInvocationOperation invocation:
                 {
-                    state = HandleInvocation(analysisContext, state, invocation, cancellationToken, out _);
+                    state = HandleInvocation(analysisContext, state, invocation, cancellationToken, out var nestedTransferState);
+                    transferState = VariableFlowTransferState.Merge(transferState, nestedTransferState);
                     goto default; //Proceed with assignment
                 }
                 // Postfix or Prefix increment/decrement: x++
                 case IIncrementOrDecrementOperation incrementOrDecrement:
                 {
-                    state = HandleIncrementOrDecrement(analysisContext, state, incrementOrDecrement, cancellationToken, out _);
+                    state = HandleIncrementOrDecrement(analysisContext, state, incrementOrDecrement, cancellationToken, out var nestedTransferState);
+                    transferState = VariableFlowTransferState.Merge(transferState, nestedTransferState);
                     value = incrementOrDecrement.Target;
                     goto default;
                 }
@@ -266,21 +287,22 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             ProgramState state,
             IAssignmentOperation assign,
             CancellationToken cancellationToken,
-            out IEnumerable<AccessPath> pathsWritten)
+            out VariableFlowTransferState transferState)
         {
+            transferState = VariableFlowTransferState.Empty;
             //Ignore array index assignments as we can not track them
             if (assign.Target.FindChilds<IArrayElementReferenceOperation>().Any())
-            {
-                pathsWritten = [];
                 return state;
-            }
+
             // Target (Left-hand side, e.g., 'x' or 'x.Prop')
             var targetPath = BuildAccessPath(assign.Target);
 
             // Get right side value 
             state = GetAbstractValue(analysisContext, state, assign.Value, assign.Target.Type, cancellationToken,
-                out var sourceValue);
-            pathsWritten = [targetPath];
+                out var sourceValue,
+                out var nestedTransferState);
+            transferState = VariableFlowTransferState.Merge(transferState, nestedTransferState);
+            transferState = transferState.WithPathWritten(targetPath);
             return state.Write(targetPath, sourceValue);
         }
         private static ProgramState HandleDeconstructAssignment(
@@ -288,7 +310,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             ProgramState state,
             IDeconstructionAssignmentOperation deconstruct,
             CancellationToken cancellationToken,
-            out IEnumerable<AccessPath> pathsWritten)
+            out VariableFlowTransferState transferState)
         {
             if (deconstruct.Target.IgnoreCasts() is not ITupleOperation tupleTarget)
                 throw new Exception("Unknown deconstruct assignment target");
@@ -299,7 +321,8 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
 
             //Pre-Evaluate all current source tuple values
             state = GetAbstractValue(analysisContext, state, deconstruct.Value, deconstruct.Target.Type, cancellationToken,
-               out var abstractSourceTupleValue);
+               out var abstractSourceTupleValue,
+               out transferState);
             if (abstractSourceTupleValue is not ValueTypeValue sourceTupleValue || sourceTupleValue.Fields.Count != tupleSource.Elements.Length)
                 throw new Exception("Unexpected abstract tuple value");
 
@@ -313,7 +336,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
                 targetPaths.Add(targetPath);
                 state = state.Write(targetPath, sourceValue);
             }
-            pathsWritten = targetPaths;
+            transferState = transferState.WithPathsWritten(targetPaths);
             return state;
         }
         private static ProgramState HandleInvocation(
@@ -321,17 +344,21 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             ProgramState state,
             IInvocationOperation invocation,
             CancellationToken cancellationToken,
-            out IEnumerable<AccessPath> pathsWritten)
+            out VariableFlowTransferState transferState)
         {
             var outParams = invocation.Arguments.Where(x => x.Parameter?.RefKind is RefKind.Out or RefKind.Ref)
                 .ToArray();
             var argumentPathsWritten = new Dictionary<IArgumentOperation, IEnumerable<AccessPath>>();
 
+            transferState = VariableFlowTransferState.Empty;
             // Check parameters for inline assignments
             foreach (var argument in invocation.Arguments.Except(outParams))
             {
-                state = TransferOperation(analysisContext, state, argument.Value, cancellationToken, out var written);
-                argumentPathsWritten.Add(argument, written);
+                state = TransferOperation(analysisContext, state, argument.Value, cancellationToken, out var nestedTransferState);
+                argumentPathsWritten.Add(argument, nestedTransferState.PathsWritten);
+                // Save each state so we can later access the state at with the arguments got passed to the method
+                transferState = transferState.WithNestedState(argument, state);
+                transferState = VariableFlowTransferState.Merge(transferState, nestedTransferState);
             }
 
             // Traverse into local function, because the might have capture clause
@@ -360,7 +387,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
                 state = state.InvalidateNested(instancePath);
             }
 
-            pathsWritten = [];
             return state;
 
             static ProgramState TraverseLocalFunction(VariableFlowAnalysisContext analysisContext, ProgramState state, IInvocationOperation invocation, CancellationToken cancellationToken)
@@ -425,20 +451,18 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             ProgramState state,
             IFlowCaptureOperation flowCapture,
             CancellationToken cancellationToken,
-            out IEnumerable<AccessPath> pathsWritten)
+            out VariableFlowTransferState transferState)
         {
+            transferState = VariableFlowTransferState.Empty;
             var flowCaptureRoot = new AccessPathRoot(new AccessSymbol(flowCapture.Id, flowCapture));
             if (flowCapture.Value.Type == null)
             {
                 //Skip null captures
                 if (flowCapture.Value.Syntax is LiteralExpressionSyntax literal && literal.Token.IsKind(SyntaxKind.NullKeyword))
-                {
-                    pathsWritten = [];
                     return state;
-                }
                 throw new Exception("Unknown type of the creation operation");
             }
-            pathsWritten = [AccessPath.FromRoot(flowCaptureRoot)];
+            transferState = transferState.WithPathWritten(AccessPath.FromRoot(flowCaptureRoot));
             return state.Allocate(flowCaptureRoot, flowCapture.Value.Type, flowCapture.Value);
         }
         private static ProgramState HandleIncrementOrDecrement(
@@ -446,14 +470,15 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             ProgramState state,
             IIncrementOrDecrementOperation incrementOrDecrement,
             CancellationToken cancellationToken,
-            out IEnumerable<AccessPath> pathsWritten)
+            out VariableFlowTransferState transferState)
         {
+            transferState = VariableFlowTransferState.Empty;
             var targetPath = BuildAccessPath(incrementOrDecrement.Target);
             if (incrementOrDecrement.Type == null)
                 throw new Exception("Unknown type of the increment or decrement operation");
 
             var value = ProgramStateExtensions.AllocateDefaultValueForType(ref state, incrementOrDecrement.Type, incrementOrDecrement);
-            pathsWritten = [targetPath];
+            transferState = transferState.WithPathWritten(targetPath);
             return state.Write(targetPath, value);
         }
 

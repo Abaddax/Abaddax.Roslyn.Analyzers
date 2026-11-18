@@ -10,9 +10,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
     /// </remarks>
     internal readonly struct PointsToSet
     {
-        public static readonly PointsToSet Empty = new(ImmutableHashSet<AllocationNode>.Empty);
+        public static readonly PointsToSet Empty = new(ImmutableHashSet<AllocationNode>.Empty.WithComparer(AllocationNode.EqualityComparer));
 
-        public ImmutableHashSet<AllocationNode> Nodes { get; } = ImmutableHashSet<AllocationNode>.Empty;
+        public ImmutableHashSet<AllocationNode> Nodes { get; }
         public bool IsEmpty => Nodes.IsEmpty;
 
         public PointsToSet(ImmutableHashSet<AllocationNode> nodes)
