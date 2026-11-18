@@ -56,11 +56,39 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             Assert.That(result, Is.Not.Null);
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
-
-        //TODO:  ShouldTraverseAssignmentIfLoop -> How should it behave correctly?
-
         [Test]
         [Category(nameof(ExpressionOriginAnalysis.TraverseAssignments))]
+        public void ShouldNotTraverseAssignmentIfLoop()
+        {
+            var result = Process(
+                """
+                using System;
+                
+                public class Test
+                {
+                    public void Func()
+                    {
+                        var x = 1;
+                        //while(x > 0)
+                        //{
+                        //    x = 0;
+                        //}
+                        for (int i = 0; i< 10; i++)
+                        {
+                            x = i;
+                        }
+                        var y = x;
+                        [|y|].ToString();
+                    }
+                }
+                """);
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.ToFullString(), Is.EqualTo("y").IgnoreWhiteSpace);
+        }
+        [Test]
+        [Category(nameof(ExpressionOriginAnalysis.TraverseAssignments))]
+        [Description("Different to a normal loop in a foreach the iterator variable is not assignable and guaranteed to come from the passed Enumerable")]
         public void ShouldTraverseAssignmentIfForeach()
         {
             var result = Process(
@@ -77,7 +105,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                         {
                             y = i;
                             [|y|].ToString();
-                        }                       
+                        }
                     }
                 }
                 """);
@@ -109,7 +137,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             Assert.That(result, Is.Not.Null);
             Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
         }
-        [Category(nameof(ExpressionOriginAnalysis.TraverseAssignments))]
         [Test]
         [Category(nameof(ExpressionOriginAnalysis.TraverseAssignments))]
         public void ShouldTraverseAssignmentProperty()

@@ -1429,7 +1429,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                 );
         }
         [Test]
-        [Ignore("Unsupported at the moment")]
+        [Ignore("TODO: Unsupported at the moment")]
         public async Task ShouldSuppressIfCustomMarkedQueryFilter()
         {
             var source =
@@ -1518,7 +1518,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
         }
 
         [Test]
-        [Ignore("Is this desired behavior?")]
+        [Ignore("TODO: Is this desired behavior?")]
         public async Task ShouldSuppressIfIgnoreUnknownQueryExtension()
         {
             var source =

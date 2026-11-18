@@ -1415,7 +1415,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
-        [Category("LocalFunction")]
         public void ShouldProcessFunctionResultToArgumentSameValueAssignment()
         {
             var operation = Process(""""
@@ -2009,10 +2008,10 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
+
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
-        [Category("LocalFunction")]
-        //[Ignore("TODO: Filter for known 'const' functions and also [Pure] filtering")]
+        [Category("InstanceFunction")]
         public void ShouldNotKeepPossibleValueAfterInstanceMethodInvocation()
         {
             var operation = Process(""""
@@ -2063,7 +2062,229 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             Assert.That(fieldValue, Is.Not.Null);
             Assert.That(fieldValue.PossibleValues, Has.Count.EqualTo(0));
         }
+        [Test]
+        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("InstanceFunction")]
+        public void ShouldKeepPossibleValueAfterPureInstanceMethodInvocation()
+        {
+            var operation = Process(""""
+                using System;
+                using System.Diagnostics.Contracts;
 
+                public class Test
+                {
+                    int X { get; set; }
+                    public void Func()
+                    {
+                        X = 1;
+                        ResetNothing();
+                        [|X|].ToString();
+                        
+                    }
+                    [Pure]
+                    void ResetNothing()
+                    {
+                        
+                    }
+                }
+                """",
+                out var semanticModel,
+                out var methodBody);
+
+            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
+                methodBody,
+                semanticModel,
+                null,
+                default);
+            Assert.That(flowAnalysis, Is.Not.Null);
+
+            var state = flowAnalysis.TryGetState(operation);
+            Assert.That(state, Is.Not.Null);
+
+            var path = VariableFlowAnalysis.BuildAccessPath(operation);
+            Assert.That(path.ToString(), Is.EqualTo("this.X").IgnoreWhiteSpace);
+            var value = state.Environment[path.Root] as ReferenceTypeValue;
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value.Targets.IsEmpty, Is.False);
+            Assert.That(value.Targets.Nodes, Has.Count.EqualTo(1));
+
+            var node = value.Targets.Nodes.First();
+            var heapNode = state.HeapStore[node];
+            Assert.That(heapNode.Allocation, Is.EqualTo(node));
+            Assert.That(heapNode.Fields, Has.Count.EqualTo(1));
+
+            var fieldValue = heapNode.Fields[path.Members[0]] as ValueTypeValue;
+            Assert.That(fieldValue, Is.Not.Null);
+            Assert.That(
+                fieldValue.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
+        }
+        [Test]
+        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("InstanceFunction")]
+        public void ShouldKeepPossibleValueAfterStaticMethodInvocation()
+        {
+            var operation = Process(""""
+                using System;
+                using System.Diagnostics.Contracts;
+
+                public class Test
+                {
+                    int X { get; set; }
+                    public void Func()
+                    {
+                        X = 1;
+                        Static();
+                        [|X|].ToString();
+                        
+                    }
+                    static void Static()
+                    {
+                        
+                    }
+                }
+                """",
+                out var semanticModel,
+                out var methodBody);
+
+            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
+                methodBody,
+                semanticModel,
+                null,
+                default);
+            Assert.That(flowAnalysis, Is.Not.Null);
+
+            var state = flowAnalysis.TryGetState(operation);
+            Assert.That(state, Is.Not.Null);
+
+            var path = VariableFlowAnalysis.BuildAccessPath(operation);
+            Assert.That(path.ToString(), Is.EqualTo("this.X").IgnoreWhiteSpace);
+            var value = state.Environment[path.Root] as ReferenceTypeValue;
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value.Targets.IsEmpty, Is.False);
+            Assert.That(value.Targets.Nodes, Has.Count.EqualTo(1));
+
+            var node = value.Targets.Nodes.First();
+            var heapNode = state.HeapStore[node];
+            Assert.That(heapNode.Allocation, Is.EqualTo(node));
+            Assert.That(heapNode.Fields, Has.Count.EqualTo(1));
+
+            var fieldValue = heapNode.Fields[path.Members[0]] as ValueTypeValue;
+            Assert.That(fieldValue, Is.Not.Null);
+            Assert.That(
+                fieldValue.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
+        }
+        [Test]
+        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("InstanceFunction")]
+        public void ShouldNotKeepPossibleValueAfterDerivedInstanceInvocation()
+        {
+            var operation = Process("""
+                using System;
+
+                public class TestBase
+                {
+                    public int X { get; set; }
+                }
+
+                public class Test : TestBase
+                {
+                    public void Func()
+                    {
+                        X = 1;
+                        ResetX();
+                        [|X|].ToString();
+                        
+                    }
+                    void ResetX()
+                    {
+                        X = 0;
+                    }
+                }
+                """,
+                out var semanticModel,
+                out var methodBody);
+
+            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
+                 methodBody,
+                 semanticModel,
+                 null,
+                 default);
+            Assert.That(flowAnalysis, Is.Not.Null);
+
+            var state = flowAnalysis.TryGetState(operation);
+            Assert.That(state, Is.Not.Null);
+
+            var path = VariableFlowAnalysis.BuildAccessPath(operation);
+            Assert.That(path.ToString(), Is.EqualTo("this.X").IgnoreWhiteSpace);
+            var value = state.Environment[path.Root] as ReferenceTypeValue;
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value.Targets.IsEmpty, Is.False);
+            Assert.That(value.Targets.Nodes, Has.Count.EqualTo(1));
+
+            var node = value.Targets.Nodes.First();
+            var heapNode = state.HeapStore[node];
+            Assert.That(heapNode.Allocation, Is.EqualTo(node));
+            Assert.That(heapNode.Fields, Has.Count.EqualTo(1));
+
+            var fieldValue = heapNode.Fields[path.Members[0]] as ValueTypeValue;
+            Assert.That(fieldValue, Is.Not.Null);
+            Assert.That(fieldValue.PossibleValues, Has.Count.EqualTo(0));
+        }
+        [Test]
+        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("InstanceFunction")]
+        public void ShouldNotKeepPossibleValueAfterThisPassedInvocation()
+        {
+            var operation = Process("""
+                using System;
+
+                public class Test
+                {
+                    public int X;
+                    public void Func()
+                    {
+                        X = 1;
+                        ResetX(this);
+                        [|X|].ToString();
+
+                    }
+                    static void ResetX(Test test)
+                    {
+                        test.X = 0;
+                    }
+                }
+                """,
+                out var semanticModel,
+                out var methodBody);
+
+            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
+                 methodBody,
+                 semanticModel,
+                 null,
+                 default);
+            Assert.That(flowAnalysis, Is.Not.Null);
+
+            var state = flowAnalysis.TryGetState(operation);
+            Assert.That(state, Is.Not.Null);
+
+            var path = VariableFlowAnalysis.BuildAccessPath(operation);
+            Assert.That(path.ToString(), Is.EqualTo("this.X").IgnoreWhiteSpace);
+            var value = state.Environment[path.Root] as ReferenceTypeValue;
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value.Targets.IsEmpty, Is.False);
+            Assert.That(value.Targets.Nodes, Has.Count.EqualTo(1));
+
+            var node = value.Targets.Nodes.First();
+            var heapNode = state.HeapStore[node];
+            Assert.That(heapNode.Allocation, Is.EqualTo(node));
+            Assert.That(heapNode.Fields, Has.Count.EqualTo(1));
+
+            var fieldValue = heapNode.Fields[path.Members[0]] as ValueTypeValue;
+            Assert.That(fieldValue, Is.Not.Null);
+            Assert.That(fieldValue.PossibleValues, Has.Count.EqualTo(0));
+        }
 
 
 
