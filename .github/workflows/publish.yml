@@ -12,7 +12,7 @@ jobs:
     runs-on: 'ubuntu-latest'
     steps:
       - name: Check version change
-        uses: Abaddax/workflows/dotnet/actions/check-version.yml@master
+        uses: Abaddax/workflows/dotnet/actions/check-version@master
         with:
           CSPROJ_PATH: Directory.Build.props
       
