@@ -135,7 +135,6 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                     }
                     public static class Extension
                     {
-                        
                         public static int Func(this Test test)
                         {
                             return 1;
@@ -173,7 +172,6 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                     }
                     public static class Extension
                     {
-                        
                         public static int Func(this TestBase test)
                         {
                             return 1;
@@ -219,7 +217,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                         }
                     }
                     public static class Extension1
-                    {                        
+                    {
                         public static int Func(this TestBase test)
                         {
                             return 1;
@@ -281,7 +279,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
         {
             var source =
                 """
-                using System;                
+                using System;
                 using System.Collections.Generic;
                 using System.Linq;
                 using System.Threading.Tasks;
@@ -327,9 +325,9 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
         {
             var source =
                 """
-                using System;                
+                using System;
                 using System.Collections.Generic;
-                using System.Linq;                
+                using System.Linq;
                 using System.Threading;
                 using System.Threading.Tasks;
 

@@ -47,7 +47,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Analyzers
                 namespace TestNamespace
                 {
                 // Because this is a test
-                #pragma warning disable ABC123 
+                #pragma warning disable ABC123
                 #pragma warning disable
                     public class Test;
                 }

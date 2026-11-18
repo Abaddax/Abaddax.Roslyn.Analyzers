@@ -160,7 +160,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                 #nullable enable
 
                 namespace TestNamespace
-                { 
+                {
                     public class Container
                     {
                         public TestContext DB { get; set; } = new();
@@ -195,7 +195,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                 #nullable enable
 
                 namespace TestNamespace
-                { 
+                {
                     public static class Container
                     {
                         public static TestContext CreateDb() => new();

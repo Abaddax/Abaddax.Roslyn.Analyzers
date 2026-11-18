@@ -1426,7 +1426,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                     {
                         var y = 1;
                         y = Inc([|y|]);
-                        
                     }
                     int Inc(int a) => a +1;
                 }
@@ -1962,13 +1961,11 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                         });
                         [|x|].ToString();
                         [|y|].ToString();
-                        
                     }
                     void X(Action x)
                     {
                         x.Invoke();
                     }
-
                 }
                 """",
                 out var semanticModel,
@@ -2025,7 +2022,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                         X = 1;
                         ResetX();
                         [|X|].ToString();
-                        
                     }
                     void ResetX()
                     {
@@ -2079,13 +2075,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                         X = 1;
                         ResetNothing();
                         [|X|].ToString();
-                        
                     }
                     [Pure]
-                    void ResetNothing()
-                    {
-                        
-                    }
+                    void ResetNothing() { }
                 }
                 """",
                 out var semanticModel,
@@ -2136,12 +2128,8 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                         X = 1;
                         Static();
                         [|X|].ToString();
-                        
                     }
-                    static void Static()
-                    {
-                        
-                    }
+                    static void Static() { }
                 }
                 """",
                 out var semanticModel,
@@ -2195,7 +2183,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                         X = 1;
                         ResetX();
                         [|X|].ToString();
-                        
                     }
                     void ResetX()
                     {

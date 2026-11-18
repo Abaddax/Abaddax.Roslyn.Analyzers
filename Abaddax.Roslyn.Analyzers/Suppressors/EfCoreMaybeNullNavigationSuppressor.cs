@@ -140,7 +140,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
                         return false;
                     }
                 }
-                // Out parameter of a method 
+                // Out parameter of a method
                 if (operation.Parent is IArgumentOperation { Parameter: not null } argument &&
                     argument.Parameter.RefKind == RefKind.Out)
                 {
@@ -465,7 +465,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
             CancellationToken cancellationToken)
         {
             IEnumerable<AttributeData> efCoreAttributes = Array.Empty<AttributeData>();
-            // Out parameter of a method 
+            // Out parameter of a method
             if (origin is SyntaxExpressionOrigin { Syntax.Parent: ArgumentSyntax argument })
             {
                 var invocation = argument.FirstAncestorOrSelf<InvocationExpressionSyntax>();

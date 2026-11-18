@@ -366,7 +366,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
                     if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                         return operation;
 
-                    // Add to callstack 
+                    // Add to callstack
                     if (callStack.Count > maxCallStackDepth || !callStack.Add(currentCallStackInfo.Method))
                         return operation;
                     callStackInfo.Push(currentCallStackInfo);
@@ -415,7 +415,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
                     if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                         return operation;
 
-                    // Add to callstack 
+                    // Add to callstack
                     if (callStack.Count > maxCallStackDepth || !callStack.Add(currentCallStackInfo.Method))
                         return operation;
                     callStackInfo.Push(currentCallStackInfo);
@@ -460,7 +460,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
                         // And map known argument constants to the method parameters
                         outerArguments = GetArguments(parentInvocation, semanticModel, outerArguments, cancellationToken);
 
-                        // Add to callstack 
+                        // Add to callstack
                         if (callStack.Count > maxCallStackDepth || !callStack.Add(currentCallStackInfo.Method))
                             return operation;
                         callStackInfo.Push(currentCallStackInfo);
@@ -555,7 +555,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
                 return syntaxRef.GetSyntax(cancellationToken);
             }
 
-            // A delegate invocation has the delegate variable as its 'Instance' 
+            // A delegate invocation has the delegate variable as its 'Instance'
             var delegateInstance = invocation.Instance?.IgnoreCasts();
             if (delegateInstance == null)
                 return null;
@@ -679,7 +679,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
 
             switch (functionOp)
             {
-                // Local function invoked directly 
+                // Local function invoked directly
                 case ILocalFunctionOperation localFunction:
                 {
                     var localCfg = localFunction.GetControlFlowGraph(default);
@@ -718,7 +718,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
                         yield break;
                     }
 
-                    // Get the delegate parameter 
+                    // Get the delegate parameter
                     var delegateParam = argument.Parameter; // This is `selector`
                     if (delegateParam == null)
                         yield break;

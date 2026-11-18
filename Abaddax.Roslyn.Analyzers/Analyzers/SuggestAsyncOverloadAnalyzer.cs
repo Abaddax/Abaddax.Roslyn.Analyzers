@@ -77,7 +77,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
         private static bool HasAsyncAlternative(IMethodSymbol callerMethod, IMethodSymbol method, ITypeSymbol receiverType, SemanticModel semanticModel, int position)
         {
             var candidates = PotentialAsyncAlternatives(method, receiverType, semanticModel, position)
-                // Do not suggest original method! Otherwise this could unintentionally cause a stack overflow 
+                // Do not suggest original method! Otherwise this could unintentionally cause a stack overflow
                 .Where(candidate => !SymbolEqualityComparer.Default.Equals(candidate, callerMethod))
                 // Do not suggest obsolete methods
                 .Where(candidate => !candidate.GetAttributes("ObsoleteAttribute", "System").Any())

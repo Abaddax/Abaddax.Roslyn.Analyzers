@@ -82,7 +82,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 		    return 1;
                 	    else
                 		    return 2;
-                        return 3;   
+                        return 3;
                     }
                 }
                 """,
@@ -117,7 +117,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 		    return 1;
                 	    else
                 		    return 2;
-                        return 3;   
+                        return 3;
                     }
                 }
                 """,
@@ -152,7 +152,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 		    return 1;
                 	    else
                 		    return 2;
-                        return 3;   
+                        return 3;
                     }
                 }
                 """,
@@ -240,7 +240,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 		        return A();
                 	        else
                 		        return B();
-                            
+                
                             int A()
                             {
                                 return 1;
@@ -273,7 +273,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 using System;
 
                 public class Test
-                {               
+                {
                     void Main()
                     {
                 	    var a = [|Func(1)|];
@@ -304,7 +304,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 using System;
 
                 public class Test
-                {               
+                {
                     void Main()
                     {
                 	    var a = [|Func()|];
@@ -505,7 +505,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                         if(flag == "cba")
                             goto BRANCH;
                         x = 0;
-                        return;                        
+                        return;
                     }
                 }
                 """,
@@ -941,7 +941,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                         X = 1;
                         ResetX();
                         [|X|].ToString();
-                        
                     }
                     void ResetX()
                     {
@@ -977,7 +976,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                         X = 1;
                         ResetX();
                         [|X|].ToString();
-                        
                     }
                     void ResetX()
                     {
@@ -1009,7 +1007,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                         X = 1;
                         ResetX(this);
                         [|X|].ToString();
-                        
                     }
                     static void ResetX(Test test)
                     {
@@ -1193,7 +1190,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                     public void Func()
                     {
                         var x = 1;
-                        X(x, (a) => 
+                        X(x, (a) =>
                         {
                             return [|a|].ToString();
                         });

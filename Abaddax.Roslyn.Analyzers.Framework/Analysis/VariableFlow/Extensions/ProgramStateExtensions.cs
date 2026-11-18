@@ -37,7 +37,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Extensions
         }
 
         /// <summary>
-        /// Writes a <paramref name="value"/> to the given <paramref name="path"/> 
+        /// Writes a <paramref name="value"/> to the given <paramref name="path"/>
         /// </summary>
         /// <remarks>
         /// Automatically routing between stack/heap variables and nested fields

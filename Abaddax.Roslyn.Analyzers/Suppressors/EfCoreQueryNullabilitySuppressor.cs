@@ -224,7 +224,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
 
             var argumentSyntax = expressionRoot.Syntax.FirstAncestorOrSelf<ArgumentSyntax>();
             if (argumentSyntax == null)
-                return false; // Not from a function argument?          
+                return false; // Not from a function argument?
 
             if (semanticModel.GetOperation(argumentSyntax, cancellationToken) is not IArgumentOperation argumentOperation)
                 return false;

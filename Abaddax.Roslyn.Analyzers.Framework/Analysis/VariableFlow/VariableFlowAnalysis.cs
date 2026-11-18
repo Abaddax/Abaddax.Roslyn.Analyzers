@@ -297,7 +297,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             // Target (Left-hand side, e.g., 'x' or 'x.Prop')
             var targetPath = BuildAccessPath(assign.Target);
 
-            // Get right side value 
+            // Get right side value
             state = GetAbstractValue(analysisContext, state, assign.Value, assign.Target.Type, cancellationToken,
                 out var sourceValue,
                 out var nestedTransferState);
@@ -327,10 +327,10 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
                 throw new Exception("Unexpected abstract tuple value");
 
             var targetPaths = new List<AccessPath>();
-            //Assign each value 
+            //Assign each value
             for (int i = 0; i < tupleTarget.Elements.Length; i++)
             {
-                //Write values to the target tuple                
+                //Write values to the target tuple
                 var targetPath = BuildAccessPath(tupleTarget.Elements[i]);
                 var sourceValue = sourceTupleValue.Fields[new AccessSymbol(tupleSourceType.TupleElements[i], tupleSource.Elements[i])];
                 targetPaths.Add(targetPath);

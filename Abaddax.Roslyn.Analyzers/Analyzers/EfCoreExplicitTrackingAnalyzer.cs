@@ -39,7 +39,7 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
                 return;
 
-            // Only invocations directly on a DbSet<T> 
+            // Only invocations directly on a DbSet<T>
             var receiver = memberAccess.Expression;
             var receiverType = context.SemanticModel.GetTypeInfo(receiver, context.CancellationToken).Type;
             if (receiverType == null)

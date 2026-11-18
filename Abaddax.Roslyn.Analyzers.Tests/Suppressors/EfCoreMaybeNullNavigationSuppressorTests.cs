@@ -975,8 +975,8 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                             var p = db.Persons
                                 .Include(x => x.Mother)
                                 .First();
-                            
-                            TestContext.TestEntity? m2 = null;                            
+                
+                            TestContext.TestEntity? m2 = null;
                             var m = p.Mother;
                             p.Mother = {|#0:m2|};
                             var ms1 = {|#1:m|}.ToString();
@@ -1015,7 +1015,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
 
                             TestContext.TestEntity p;
                             if (DateTime.UtcNow.Second > 100)
-                            {                            
+                            {
                                 p = db.Persons
                                     .Include(x => x.Mother)
                                     .First();
@@ -1056,7 +1056,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
 
                             TestContext.TestEntity p;
                             if (true)
-                            {                            
+                            {
                                 p = db.Persons
                                     .Include(x => x.Mother)
                                     .First();
@@ -1095,7 +1095,7 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
 
                             TestContext.TestEntity p = new();
                             for (int i = 0; i < 10; i++)
-                            {                      
+                            {
                                 p = db.Persons
                                     .Include(x => x.Mother)
                                     .First();
