@@ -75,8 +75,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin
             // Unwrap forwarded variable assignments. var x = Func(); var y = x -> y = Func()
             expression = TraverseAssignments(expression, semanticModel, cancellationToken,
                 onTraverseCallback: onTraverseCallback)
-                .IgnoreCasts()
-                .IgnoreNullSuppression();
+                .IgnoreCastsAndNullSuppressions();
 
             if (!semanticModel.HasSameSyntaxTree(expression))
             {

@@ -247,7 +247,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
         {
             if (variable.Syntax is not ExpressionSyntax expression)
                 yield break;
-            expression = expression.IgnoreCasts().IgnoreNullSuppression();
+            expression = expression.IgnoreCastsAndNullSuppressions();
 
             // We can only analyze methods where we have the source code.
             var methodBody = expression.GetContainingMethodDeclarationBlock();

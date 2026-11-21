@@ -231,7 +231,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
                                 if (argument?.Expression is SimpleLambdaExpressionSyntax lambda &&
                                     lambda.Body is ExpressionSyntax bodyExpression)
                                 {
-                                    if (bodyExpression.IgnoreCasts().IgnoreNullSuppression() is MemberAccessExpressionSyntax lambdaMember)
+                                    if (bodyExpression.IgnoreCastsAndNullSuppressions() is MemberAccessExpressionSyntax lambdaMember)
                                     {
                                         var selectedMemberSymbol = semanticModel.GetSymbolInfo(lambdaMember, cancellationToken).Symbol;
                                         if (selectedMemberSymbol is IPropertySymbol selectedProperty)
@@ -345,7 +345,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
                                 if (argument?.Expression is SimpleLambdaExpressionSyntax lambda &&
                                     lambda.Body is ExpressionSyntax bodyExpression)
                                 {
-                                    if (bodyExpression.IgnoreCasts().IgnoreNullSuppression() is MemberAccessExpressionSyntax lambdaMember)
+                                    if (bodyExpression.IgnoreCastsAndNullSuppressions() is MemberAccessExpressionSyntax lambdaMember)
                                     {
                                         return lambdaMember.Name.Identifier.Text;
                                     }
@@ -359,7 +359,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
                                 if (argument?.Expression is SimpleLambdaExpressionSyntax lambda &&
                                     lambda.Body is ExpressionSyntax bodyExpression)
                                 {
-                                    if (bodyExpression.IgnoreCasts().IgnoreNullSuppression() is MemberAccessExpressionSyntax lambdaMember)
+                                    if (bodyExpression.IgnoreCastsAndNullSuppressions() is MemberAccessExpressionSyntax lambdaMember)
                                     {
                                         // Found one layer of the property path
                                         return lambdaMember.Name.Identifier.Text;
@@ -438,7 +438,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
                             if (argument?.Expression is SimpleLambdaExpressionSyntax lambda &&
                                 lambda.Body is ExpressionSyntax bodyExpression)
                             {
-                                if (bodyExpression.IgnoreCasts().IgnoreNullSuppression() is MemberAccessExpressionSyntax lambdaMember)
+                                if (bodyExpression.IgnoreCastsAndNullSuppressions() is MemberAccessExpressionSyntax lambdaMember)
                                 {
                                     var memberSymbol = semanticModel.GetSymbolInfo(lambdaMember, cancellationToken).Symbol;
                                     if (memberSymbol is IPropertySymbol propertySymbol && HasMaybeNullAttribute(propertySymbol))

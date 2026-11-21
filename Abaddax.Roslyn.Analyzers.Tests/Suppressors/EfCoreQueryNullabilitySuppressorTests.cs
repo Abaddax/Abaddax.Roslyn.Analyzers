@@ -279,5 +279,34 @@ namespace Abaddax.Roslyn.Analyzers.Tests.Suppressors
                     .WithIsSuppressed(true)
                 );
         }
+        [Test]
+        public async Task ShouldSuppressIfCastedInsideQuery()
+        {
+            var source =
+                """
+                #nullable enable
+
+                namespace TestNamespace
+                {
+                    public class Test
+                    {
+                        public void Func()
+                        {
+                            var db = new TestContext();
+
+                            var q = db.Persons
+                                .Include(x => x.Mother)
+                                .Select(x => {|#0:((TestContext.TestEntity)x).Mother|}.Father);
+                        }
+                    }
+                }
+                """;
+            await VerifySuppressorAsync(source,
+                DiagnosticResult.CompilerWarning("CS8602")
+                    .WithLocation(0)
+                    .WithIsSuppressed(true)
+                );
+        }
+
     }
 }
