@@ -443,6 +443,33 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             Assert.That(result, Is.Not.Null);
             Assert.That(result.ToFullString(), Is.EqualTo("x").IgnoreWhiteSpace);
         }
+        [Test]
+        [Category(nameof(ExpressionOriginAnalysis.TryExpand))]
+        public void ShouldExpandTupleValueAccess()
+        {
+            var result = ProcessOrigin(
+                """
+                using System;
+                
+                public class Test
+                {
+                    Test Parent { get; set; }
+                    int X { get; set;}
+                    public void Func()
+                    {
+                        var x = 1;
+                        var y = new Test();
+                        this.Parent = y;
+                        y.Parent.X = x;
+                        var z = (Parent.Parent.X, 2);
+                        [|z.Item1|].ToString();
+                    }
+                }
+                """);
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.ToFullString(), Is.EqualTo("1").IgnoreWhiteSpace);
+        }
 
     }
 }

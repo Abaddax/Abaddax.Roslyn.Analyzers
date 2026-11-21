@@ -48,6 +48,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
         public AccessSymbol(ISymbol symbol, IOperation? accessOperation = null)
         {
             Symbol = symbol ?? throw new ArgumentNullException(nameof(symbol));
+            // Edge case for tuples: Always unwrap to the actual tuple field (Item1, Item2, ...)
+            if (Symbol is IFieldSymbol field)
+                Symbol = field.CorrespondingTupleField ?? Symbol;
             AccessOperation = accessOperation;
         }
         public AccessSymbol(CaptureId captureId, IOperation? accessOperation = null)

@@ -1793,6 +1793,70 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
+        [Test]
+        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        public void ShouldProcessValueTupleAccess()
+        {
+            var operations = ProcessMultiple(""""
+                using System;
+
+                public class Test
+                {
+                    void Func()
+                    {
+                        var x = 1;
+                        var y = 2;
+                        var z = (Y: y, x);
+                        [|z.Y|].ToString();
+                        [|z.Item2|].ToString();
+                    }
+                }
+                """",
+                out var semanticModel,
+                out var methodBody);
+
+            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
+                methodBody,
+                semanticModel,
+                null,
+                default);
+            Assert.That(flowAnalysis, Is.Not.Null);
+
+            var operation1 = operations[0];
+            var operation2 = operations[1];
+
+            var state1 = flowAnalysis.TryGetState(operation1);
+            Assert.That(state1, Is.Not.Null);
+            var path1 = VariableFlowAnalysis.BuildAccessPath(operation1);
+            Assert.That(path1.ToString(), Is.EqualTo("z.Item1").IgnoreWhiteSpace);
+
+            var state2 = flowAnalysis.TryGetState(operation2);
+            Assert.That(state2, Is.Not.Null);
+            var path2 = VariableFlowAnalysis.BuildAccessPath(operation2);
+            Assert.That(path2.ToString(), Is.EqualTo("z.Item2").IgnoreWhiteSpace);
+
+            Assert.That(path1.Root, Is.EqualTo(path2.Root).Using(AccessPathRoot.EqualityComparer));
+
+            var tupleValue = state1.Environment[path1.Root] as ValueTypeValue;
+            Assert.That(tupleValue, Is.Not.Null);
+            Assert.That(tupleValue.Fields, Has.Count.EqualTo(2));
+            Assert.That(tupleValue.PossibleValues, Is.Empty);
+
+            var value1 = tupleValue.Fields[path1.Members[0]] as ValueTypeValue;
+            Assert.That(value1, Is.Not.Null);
+            Assert.That(value1.Fields, Is.Empty);
+            Assert.That(
+                value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
+
+            var value2 = tupleValue.Fields[path2.Members[0]] as ValueTypeValue;
+            Assert.That(value2, Is.Not.Null);
+            Assert.That(value2.Fields, Is.Empty);
+            Assert.That(
+                value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
+        }
+
 
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
