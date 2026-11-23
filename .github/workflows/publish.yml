@@ -10,8 +10,11 @@ jobs:
   check_version:
     name: Check version change
     runs-on: 'ubuntu-latest'
+    outputs:
+      version_changed: ${{ steps.version_check.outputs.version_changed }}
     steps:
       - name: Check version change
+        id: version_check
         uses: Abaddax/workflows/dotnet/actions/check-version@master
         with:
           CSPROJ_PATH: Directory.Build.props
