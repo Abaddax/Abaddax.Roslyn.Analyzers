@@ -57,7 +57,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
                     {
                         CFG = cfg,
                         SemanticModel = semanticModel,
-                        KnownArguments = knownArguments ?? ImmutableDictionary<IParameterSymbol, ParameterValue>.Empty,
                         CallStack = new HashSet<IMethodSymbol>([methodSymbol], SymbolEqualityComparer.Default),
                         MaxCallStackDepth = 10,
                         EmptyState = emptyState
@@ -104,7 +103,12 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
                 exitStates.Clear();
 
                 foreach (var block in analysisContext.CFG.TraverseCfg(
-                    knownArguments: analysisContext.KnownArguments,
+                    branchValueResolver: branchValue =>
+                    {
+                        var value = ProgramStateExtensions.GetPossibleLastValues(states, analysisContext.CFG, branchValue)
+                            .ExactlyOneOrDefault();
+                        return value;
+                    },
                     cancellationToken: cancellationToken))
                 {
                     // Compute IN state by MERGING Out-states of all incoming predecessor blocks
@@ -362,7 +366,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
             }
 
             // Traverse into local function, because the might have capture clause
-            state = TraverseLocalFunction(analysisContext, state, invocation, cancellationToken);
+            state = TraverseLocalFunction(analysisContext, state, invocation, transferState, cancellationToken);
 
             // Invalidated passed arguments
             foreach (var argument in invocation.Arguments.Except(outParams).Where(x => !x.IsConstLikeArgument()))
@@ -389,7 +393,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
 
             return state;
 
-            static ProgramState TraverseLocalFunction(VariableFlowAnalysisContext analysisContext, ProgramState state, IInvocationOperation invocation, CancellationToken cancellationToken)
+            static ProgramState TraverseLocalFunction(VariableFlowAnalysisContext analysisContext, ProgramState state, IInvocationOperation invocation, VariableFlowTransferState transferState, CancellationToken cancellationToken)
             {
                 if (invocation.TargetMethod.IsStatic)
                     return state;
@@ -409,10 +413,9 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
                     {
                         CFG = localCfg,
                         SemanticModel = analysisContext.SemanticModel,
-                        KnownArguments = analysisContext.KnownArguments, //TODO: Inject current state
                         CallStack = analysisContext.CallStack,
                         MaxCallStackDepth = analysisContext.MaxCallStackDepth,
-                        EmptyState = state,
+                        EmptyState = GetLocalFunctionState(state, invocation, transferState)
                     }, cancellationToken);
                     if (flowAnalysis == null)
                         return state;
@@ -428,6 +431,33 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
                 {
                     analysisContext.CallStack.Remove(invocation.TargetMethod);
                 }
+            }
+            static ProgramState GetLocalFunctionState(
+                ProgramState state,
+                IInvocationOperation invocation,
+                VariableFlowTransferState transferState)
+            {
+                var knownArguments = new Dictionary<IParameterSymbol, ParameterValue>(SymbolEqualityComparer.Default);
+                foreach (var arg in invocation.Arguments)
+                {
+                    if (arg.Parameter != null)
+                    {
+                        // Add the the caller arguments
+                        if (!transferState.NestedOperationStates.TryGetValue(arg, out var nestedState))
+                            continue;
+                        var accessPath = TryBuildAccessPath(arg.Value, out _);
+                        if (accessPath == null)
+                            continue;
+                        var abstractValue = ProgramStateExtensions.EvaluatePath(ref nestedState, accessPath.Value);
+                        var value = ProgramStateExtensions.GetPossibleLastValues(abstractValue)
+                            .ExactlyOneOrDefault();
+                        if (value == null)
+                            continue;
+                        knownArguments[arg.Parameter] = new ParameterValue(value);
+                        continue;
+                    }
+                }
+                return InjectKnownArguments(state, knownArguments);
             }
             static ProgramState InvalidateAccessPath(ProgramState state, IArgumentOperation argument, IEnumerable<AccessPath> accessPaths)
             {

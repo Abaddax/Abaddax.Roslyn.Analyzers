@@ -1202,7 +1202,50 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["4"]).IgnoreWhiteSpace);
         }
+        [Test]
+        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Condition")]
+        public void ShouldProcessBranchWithLocalValueCondition()
+        {
+            var operation = Process("""
+                using System;
 
+                public class Test
+                {
+                    void Func()
+                    {
+                        bool condition = true; 
+                        int x = 0;
+                        if (condition)
+                            x = 1;
+                        else
+                            x = 2;
+                        [|x|].ToString();
+                    }
+                }
+                """,
+                out var semanticModel,
+                out var methodBody);
+
+            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
+                methodBody,
+                semanticModel,
+                null,
+                default);
+            Assert.That(flowAnalysis, Is.Not.Null);
+
+            var state = flowAnalysis.TryGetState(operation);
+            Assert.That(state, Is.Not.Null);
+
+            var path = VariableFlowAnalysis.BuildAccessPath(operation);
+            Assert.That(path.ToString(), Is.EqualTo("x").IgnoreWhiteSpace);
+            var value = state.Environment[path.Root] as ValueTypeValue;
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value.Fields, Is.Empty);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
+        }
 
 
         [Test]
@@ -2002,6 +2045,72 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             Assert.That(
                 value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
+        }
+        [Test]
+        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("LocalFunction")]
+        public void ShouldProcessLocalFunctionInvocationWithArgument()
+        {
+            var operations = ProcessMultiple(""""
+                using System;
+
+                public class Test
+                {
+                    void Func()
+                    {
+                        var y = 1;
+                        var x = 1;
+                        X(x);
+                        [|x|].ToString();
+                        [|y|].ToString();
+                        void X(int a)
+                        {
+                            if (a == 1)
+                                y = 2;
+                            else
+                                y = 3;
+                            x = 0;
+                        }
+                    }
+
+                }
+                """",
+                out var semanticModel,
+                out var methodBody);
+
+            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
+                methodBody,
+                semanticModel,
+                null,
+                default);
+            Assert.That(flowAnalysis, Is.Not.Null);
+
+            var operation1 = operations[0];
+            var operation2 = operations[1];
+
+            var state1 = flowAnalysis.TryGetState(operation1);
+            Assert.That(state1, Is.Not.Null);
+            var path1 = VariableFlowAnalysis.BuildAccessPath(operation1);
+            Assert.That(path1.ToString(), Is.EqualTo("x").IgnoreWhiteSpace);
+
+            var state2 = flowAnalysis.TryGetState(operation2);
+            Assert.That(state2, Is.Not.Null);
+            var path2 = VariableFlowAnalysis.BuildAccessPath(operation2);
+            Assert.That(path2.ToString(), Is.EqualTo("y").IgnoreWhiteSpace);
+
+            var value1 = state1.Environment[path1.Root] as ValueTypeValue;
+            Assert.That(value1, Is.Not.Null);
+            Assert.That(value1.Fields, Is.Empty);
+            Assert.That(
+                value1.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["0"]).IgnoreWhiteSpace);
+
+            var value2 = state2.Environment[path2.Root] as ValueTypeValue;
+            Assert.That(value2, Is.Not.Null);
+            Assert.That(value2.Fields, Is.Empty);
+            Assert.That(
+                value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["2"]).IgnoreWhiteSpace);
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]

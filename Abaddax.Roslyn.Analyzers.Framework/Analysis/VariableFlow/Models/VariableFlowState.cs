@@ -1,5 +1,4 @@
 using Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Extensions;
-using Abaddax.Roslyn.Analyzers.Framework.Extensions;
 using Abaddax.Roslyn.Analyzers.Framework.Helper;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.FlowAnalysis;
@@ -25,16 +24,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
 
         internal ProgramState? TryGetState(IOperation operation)
         {
-            var cfgOperation = CFG.FindMatchingOperation(operation);
-            if (cfgOperation == null)
-                return null;
-            while (cfgOperation != null)
-            {
-                if (States.TryGetValue(cfgOperation, out var methodState))
-                    return methodState;
-                cfgOperation = cfgOperation.Parent;
-            }
-            return null;
+            return ProgramStateExtensions.TryGetState(States, CFG, operation);
         }
 
         /// <summary>
@@ -42,46 +32,14 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models
         /// </summary>
         public IEnumerable<IOperation?> GetPossibleLastValues(IOperation variableReference)
         {
-            var operation = CFG.FindMatchingOperation(variableReference);
-            if (operation == null)
-                yield break;
-            var state = TryGetState(operation);
-            if (state == null)
-                yield break;
-            var accessPath = VariableFlowAnalysis.TryBuildAccessPath(operation, out _);
-            if (accessPath == null)
-                yield break;
-            var value = ProgramStateExtensions.EvaluatePath(ref state, accessPath.Value);
-            if (value == null)
-                yield break;
-            foreach (var possibleValue in ProgramStateExtensions.GetPossibleLastValues(value))
-            {
-                // Do not return itself
-                if (!OperationEqualityComparer.Default.Equals(possibleValue, operation))
-                    yield return possibleValue;
-            }
+            return ProgramStateExtensions.GetPossibleLastValues(States, CFG, variableReference);
         }
         /// <summary>
         /// Gets the known possible values of the given <paramref name="variableReference"/> at the exit of the method
         /// </summary>
         public IEnumerable<IOperation?> GetPossibleExitValues(IOperation variableReference)
         {
-            var accessPath = VariableFlowAnalysis.TryBuildAccessPath(variableReference, out _);
-            if (accessPath == null)
-                yield break;
-            foreach (var exitState in ExitStates)
-            {
-                var state = exitState;
-                var value = ProgramStateExtensions.EvaluatePath(ref state, accessPath.Value);
-                if (value == null)
-                    continue;
-                foreach (var possibleValue in ProgramStateExtensions.GetPossibleLastValues(value))
-                {
-                    // Do not return itself
-                    if (!OperationEqualityComparer.Default.Equals(possibleValue, variableReference))
-                        yield return possibleValue;
-                }
-            }
+            return ProgramStateExtensions.GetPossibleExitValues(ExitStates, variableReference);
         }
 
     }

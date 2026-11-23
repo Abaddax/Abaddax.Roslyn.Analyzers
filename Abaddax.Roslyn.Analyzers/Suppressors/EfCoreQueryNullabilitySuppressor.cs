@@ -2,6 +2,7 @@ using Abaddax.Roslyn.Analyzers.Extensions;
 using Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin;
 using Abaddax.Roslyn.Analyzers.Framework.Analysis.ExpressionOrigin.Models;
 using Abaddax.Roslyn.Analyzers.Framework.Extensions;
+using Abaddax.Roslyn.Analyzers.Framework.Helper;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -228,7 +229,7 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
 
             if (semanticModel.GetOperation(argumentSyntax, cancellationToken) is not IArgumentOperation argumentOperation)
                 return false;
-            var argument = invocationOperation.Arguments.FirstOrDefault(x => x == argumentOperation);
+            var argument = invocationOperation.Arguments.Where(x => OperationEqualityComparer.SyntaxEquality.Equals(x, argumentOperation)).ExactlyOneOrDefault();
             if (argument == null)
                 return false; // Not from this invocation?
 

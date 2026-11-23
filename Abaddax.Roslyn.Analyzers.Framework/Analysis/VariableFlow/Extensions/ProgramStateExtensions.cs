@@ -2,6 +2,7 @@ using Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models;
 using Abaddax.Roslyn.Analyzers.Framework.Extensions;
 using Abaddax.Roslyn.Analyzers.Framework.Helper;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
 namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Extensions
@@ -269,6 +270,69 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Extensions
             }
         }
 
+
+        /// <summary>
+        /// Finds the corresponding <see cref="ProgramState"/> for the given <paramref name="operation"/>
+        /// </summary>
+        public static ProgramState? TryGetState(IReadOnlyDictionary<IOperation, ProgramState> states, ControlFlowGraph cfg, IOperation operation)
+        {
+            var cfgOperation = cfg.FindMatchingOperation(operation);
+            if (cfgOperation == null)
+                return null;
+            while (cfgOperation != null)
+            {
+                if (states.TryGetValue(cfgOperation, out var methodState))
+                    return methodState;
+                cfgOperation = cfgOperation.Parent;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Gets the known possible values at the state of the given <paramref name="variableReference"/> inside the method
+        /// </summary>
+        public static IEnumerable<IOperation?> GetPossibleLastValues(IReadOnlyDictionary<IOperation, ProgramState> states, ControlFlowGraph cfg, IOperation variableReference)
+        {
+            var operation = cfg.FindMatchingOperation(variableReference);
+            if (operation == null)
+                yield break;
+            var state = TryGetState(states, cfg, operation);
+            if (state == null)
+                yield break;
+            var accessPath = VariableFlowAnalysis.TryBuildAccessPath(operation, out _);
+            if (accessPath == null)
+                yield break;
+            var value = EvaluatePath(ref state, accessPath.Value);
+            if (value == null)
+                yield break;
+            foreach (var possibleValue in GetPossibleLastValues(value))
+            {
+                // Do not return itself
+                if (!OperationEqualityComparer.Default.Equals(possibleValue, operation))
+                    yield return possibleValue;
+            }
+        }
+        /// <summary>
+        /// Gets the known possible values of the given <paramref name="variableReference"/> at the exit of the method
+        /// </summary>
+        public static IEnumerable<IOperation?> GetPossibleExitValues(IEnumerable<ProgramState> exitStates, IOperation variableReference)
+        {
+            var accessPath = VariableFlowAnalysis.TryBuildAccessPath(variableReference, out _);
+            if (accessPath == null)
+                yield break;
+            foreach (var exitState in exitStates)
+            {
+                var state = exitState;
+                var value = EvaluatePath(ref state, accessPath.Value);
+                if (value == null)
+                    continue;
+                foreach (var possibleValue in GetPossibleLastValues(value))
+                {
+                    // Do not return itself
+                    if (!OperationEqualityComparer.Default.Equals(possibleValue, variableReference))
+                        yield return possibleValue;
+                }
+            }
+        }
         /// <summary>
         /// Returns the stored possible values of the given <paramref name="value"/>
         /// </summary>

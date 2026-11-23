@@ -130,7 +130,21 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
                 if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                     yield break;
 
-                foreach (var block in cfg.TraverseCfg(knownArguments, cancellationToken))
+                foreach (var block in cfg.TraverseCfg(
+                    branchValueResolver: branchValue =>
+                    {
+                        if (knownArguments == null)
+                            return null;
+                        if (branchValue is IParameterReferenceOperation paramRef && paramRef.Parameter != null)
+                        {
+                            if (knownArguments.TryGetValue(paramRef.Parameter, out var parameterValue))
+                            {
+                                return parameterValue.Parameter;
+                            }
+                        }
+                        return null;
+                    },
+                    cancellationToken: cancellationToken))
                 {
                     // Check for explicit Return operations inside the block's body
                     foreach (var op in block.Operations)
@@ -757,7 +771,6 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
             }
             yield break;
         }
-
         #endregion
     }
 }

@@ -1,5 +1,4 @@
 using Abaddax.Roslyn.Analyzers.Framework.Helper;
-using Abaddax.Roslyn.Analyzers.Framework.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
@@ -77,10 +76,15 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
         }
 
         /// <summary>
+        /// Resolved the known value for <paramref name="branchValue"/>
+        /// </summary>
+        /// <returns>Known last value operation or <see langword="null"/></returns>
+        public delegate IOperation? BranchValueCallback(IOperation branchValue);
+        /// <summary>
         /// Traverses the all reachable block in the given <paramref name="cfg"/>
         /// </summary>
         public static IEnumerable<BasicBlock> TraverseCfg(this ControlFlowGraph cfg,
-            IReadOnlyDictionary<IParameterSymbol, ParameterValue>? knownArguments = null,
+            BranchValueCallback? branchValueResolver = null,
             CancellationToken cancellationToken = default)
         {
             // Traverse the CFG contextually
@@ -124,7 +128,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
                 // Default non-exception branch processing
                 if (currentBlock.ConditionalSuccessor != null)
                 {
-                    bool? conditionResult = EvaluateCondition(currentBlock.BranchValue, knownArguments);
+                    bool? conditionResult = EvaluateCondition(currentBlock.BranchValue, branchValueResolver);
 
                     // If ConditionKind is JumpIfTrue, and result is true, we take the ConditionalSuccessor.
                     // If result is unknown (null), we must traverse BOTH paths.
@@ -168,11 +172,11 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
             /// <remarks>Only works for compiler constants</remarks>
             static bool? EvaluateCondition(
                 IOperation? condition,
-                IReadOnlyDictionary<IParameterSymbol, ParameterValue>? knownArguments)
+                BranchValueCallback? branchValueResolver)
             {
                 if (condition == null)
                     return null;
-                if (knownArguments == null)
+                if (branchValueResolver == null)
                     return null;
                 condition = condition.IgnoreCasts();
 
@@ -183,22 +187,11 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
                     return literalBool;
                 }
 
-                //if (x)
-                if (condition is IParameterReferenceOperation paramRef &&
-                    paramRef.Parameter != null)
-                {
-                    if (knownArguments.TryGetValue(paramRef.Parameter, out var parameterValue) &&
-                        parameterValue.ConstValue.HasValue &&
-                        parameterValue.ConstValue.Value is bool boolVal)
-                    {
-                        return boolVal;
-                    }
-                }
                 //if (!x)
                 if (condition is IUnaryOperation unaryOp &&
                     unaryOp.OperatorKind == UnaryOperatorKind.Not)
                 {
-                    bool? operandResult = EvaluateCondition(unaryOp.Operand, knownArguments);
+                    bool? operandResult = EvaluateCondition(unaryOp.Operand, branchValueResolver);
                     if (operandResult.HasValue)
                         return !operandResult.Value;
                 }
@@ -207,8 +200,8 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
                 if (condition is IBinaryOperation binaryOp &&
                     binaryOp.OperatorKind is BinaryOperatorKind.Equals or BinaryOperatorKind.NotEquals)
                 {
-                    if (TryEvaluateValue(binaryOp.LeftOperand, knownArguments, out object? left) &&
-                        TryEvaluateValue(binaryOp.RightOperand, knownArguments, out object? right))
+                    if (TryEvaluateValue(binaryOp.LeftOperand, branchValueResolver, out object? left) &&
+                        TryEvaluateValue(binaryOp.RightOperand, branchValueResolver, out object? right))
                     {
                         bool areEqual = object.Equals(left, right);
                         return binaryOp.OperatorKind == BinaryOperatorKind.Equals
@@ -217,9 +210,16 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
                     }
                 }
 
+                //if (x)
+                if (TryEvaluateValue(condition, branchValueResolver, out var conditionValue) &&
+                    conditionValue is bool boolVal)
+                {
+                    return boolVal;
+                }
+
                 return null;
 
-                static bool TryEvaluateValue(IOperation? op, IReadOnlyDictionary<IParameterSymbol, ParameterValue> knownArguments, out object? value)
+                static bool TryEvaluateValue(IOperation? op, BranchValueCallback branchValueResolver, out object? value)
                 {
                     value = null;
                     if (op == null)
@@ -233,18 +233,14 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
                         return true;
                     }
 
-                    // Is it a parameter we mapped from the caller?
-                    if (op is IParameterReferenceOperation paramRef && paramRef.Parameter != null)
-                    {
-                        if (!knownArguments.TryGetValue(paramRef.Parameter, out var parameterValue))
-                            return false;
-                        if (!parameterValue.ConstValue.HasValue)
-                            return false;
-                        value = parameterValue.ConstValue.Value;
-                        return true;
-                    }
-
-                    return false; // Unknown value
+                    // Is it a a known value? Ask callback and check value
+                    var conditionValue = branchValueResolver.Invoke(op);
+                    if (conditionValue == null)
+                        return false;
+                    if (!conditionValue.ConstantValue.HasValue)
+                        return false;
+                    value = conditionValue.ConstantValue.Value;
+                    return true;
                 }
             }
 
