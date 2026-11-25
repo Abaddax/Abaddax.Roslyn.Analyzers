@@ -160,8 +160,20 @@ namespace Abaddax.Roslyn.Analyzers.Suppressors
         /// </summary>
         private static bool HasMaybeNullAttribute(IPropertySymbol propertySymbol)
         {
-            return propertySymbol.GetAttributes("MaybeNullAttribute", "System.Diagnostics.CodeAnalysis")
-                .Any();
+            if (propertySymbol
+                .GetAttributes("MaybeNullAttribute", "System.Diagnostics.CodeAnalysis")
+                .Any())
+            {
+                return true;
+            }
+            if (propertySymbol.GetMethod != null &&
+                propertySymbol.GetMethod
+                .GetReturnTypeAttributes("MaybeNullAttribute", "System.Diagnostics.CodeAnalysis")
+                .Any())
+            {
+                return true;
+            }
+            return false;
         }
         /// <summary>
         /// Check if the <paramref name="origin"/> path is included in the query
