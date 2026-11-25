@@ -35,10 +35,8 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
         {
             var invocation = (InvocationExpressionSyntax)context.Node;
 
-            var methodBlock = invocation.GetContainingMethodDeclarationBlock();
-            if (methodBlock == null)
-                return;
-            if (context.SemanticModel.GetDeclaredSymbol(methodBlock, context.CancellationToken) is not IMethodSymbol callerMethod)
+            var callerMethod = invocation.GetContainingMethodSymbol(context.SemanticModel, context.CancellationToken);
+            if (callerMethod == null)
                 return;
             // Skip inside sync methods
             if (!callerMethod.IsTaskedMethodDeclaration())

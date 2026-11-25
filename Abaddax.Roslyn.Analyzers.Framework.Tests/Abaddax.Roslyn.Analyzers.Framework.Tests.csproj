@@ -33,6 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.Attributes\Abaddax.Roslyn.Analyzers.Attributes.csproj" />
     <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.Framework\Abaddax.Roslyn.Analyzers.Framework.csproj" />
   </ItemGroup>
 

@@ -57,9 +57,36 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Extensions
         public static MethodDeclarationSyntax? GetContainingMethodDeclarationBlock(this SyntaxNode expression)
         {
             return expression
-                .Ancestors()
+                .AncestorsAndSelf()
                 .OfType<MethodDeclarationSyntax>()
                 .FirstOrDefault();
         }
+        /// <summary>
+        /// Find the lambda block the <paramref name="expression"/> is contained in
+        /// </summary>
+        public static LambdaExpressionSyntax? GetContainingLambdaDefinitionBlock(this SyntaxNode expression)
+        {
+            return expression
+                .AncestorsAndSelf()
+                .OfType<LambdaExpressionSyntax>()
+                .FirstOrDefault();
+        }
+
+        public static IMethodSymbol? GetContainingMethodSymbol(this SyntaxNode expression, SemanticModel semanticModel,
+            CancellationToken cancellationToken = default)
+        {
+            var lambda = expression.GetContainingLambdaDefinitionBlock();
+            if (lambda != null)
+            {
+                return semanticModel.GetSymbolInfo(lambda, cancellationToken).Symbol as IMethodSymbol;
+            }
+            var methodDecl = expression.GetContainingMethodDeclarationBlock();
+            if (methodDecl != null)
+            {
+                return semanticModel.GetDeclaredSymbol(methodDecl, cancellationToken);
+            }
+            return null;
+        }
+
     }
 }

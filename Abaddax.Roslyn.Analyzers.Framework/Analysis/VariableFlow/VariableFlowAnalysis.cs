@@ -17,19 +17,26 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow
     public static class VariableFlowAnalysis
     {
         public static VariableFlowState? RunAnalysis(
-            MethodDeclarationSyntax methodBody,
+            SyntaxNode methodBody,
             SemanticModel semanticModel,
             IReadOnlyDictionary<IParameterSymbol, ParameterValue>? knownArguments,
             CancellationToken cancellationToken)
         {
+            var methodSymbol = methodBody.GetContainingMethodSymbol(semanticModel, cancellationToken);
+            if (methodSymbol == null)
+                return null;
             var methodOperation = semanticModel.GetOperation(methodBody, cancellationToken);
             if (methodOperation == null)
-                return null;
-            if (semanticModel.GetDeclaredSymbol(methodBody, cancellationToken) is not IMethodSymbol methodSymbol)
                 return null;
             var cfg = methodOperation.GetControlFlowGraph(cancellationToken);
             if (cfg == null)
                 return null;
+            if (methodSymbol.MethodKind is MethodKind.LocalFunction or MethodKind.LambdaMethod or MethodKind.DelegateInvoke)
+            {
+                cfg = cfg.GetLocalFunctionCfg(methodSymbol, cancellationToken);
+                if (cfg == null)
+                    return null;
+            }
             return RunAnalysis(methodSymbol, cfg, semanticModel, knownArguments, cancellationToken);
         }
         public static VariableFlowState? RunAnalysis(

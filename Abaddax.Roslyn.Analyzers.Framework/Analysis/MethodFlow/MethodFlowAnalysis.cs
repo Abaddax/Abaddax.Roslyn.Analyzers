@@ -283,8 +283,16 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Analysis.MethodFlow
             if (cfg == null || cfg.Blocks.IsDefaultOrEmpty)
                 yield break;
 
-            if (semanticModel.GetDeclaredSymbol(methodBody, cancellationToken) is not IMethodSymbol methodSymbol)
+            // Get the actual method symbol (also accounting if in a local lambda)
+            var methodSymbol = expression.GetContainingMethodSymbol(semanticModel, cancellationToken);
+            if (methodSymbol == null)
                 yield break;
+            if (methodSymbol.MethodKind is MethodKind.LocalFunction or MethodKind.LambdaMethod or MethodKind.DelegateInvoke)
+            {
+                cfg = cfg.GetLocalFunctionCfg(methodSymbol, cancellationToken);
+                if (cfg == null)
+                    yield break;
+            }
 
             var variableFlow = VariableFlowAnalysis.RunAnalysis(
                 methodSymbol,

@@ -3,7 +3,6 @@ using Abaddax.Roslyn.Analyzers.Framework.Analysis.VariableFlow.Models;
 using Abaddax.Roslyn.Analyzers.Framework.Extensions;
 using Abaddax.Roslyn.Analyzers.Framework.Tests.Common;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using NUnit.Framework;
 using System.Diagnostics.CodeAnalysis;
@@ -14,7 +13,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
     {
         private IOperation Process([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
             out SemanticModel semanticModel,
-            out MethodDeclarationSyntax methodDecl)
+            out SyntaxNode methodDecl)
         {
             return ProcessMultiple(source,
                 out semanticModel,
@@ -22,7 +21,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
         }
         private IOperation[] ProcessMultiple([StringSyntax(StringSyntaxHelper.CSharpTest)] string source,
             out SemanticModel semanticModel,
-            out MethodDeclarationSyntax methodDecl)
+            out SyntaxNode methodDecl)
         {
             var syntaxNodes = ParseMultiple(source, out semanticModel);
 
@@ -34,7 +33,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 operations.Add(operation);
             }
 
-            var methodDeclaration = syntaxNodes[0].GetContainingMethodDeclarationBlock();
+            var methodDeclaration = (SyntaxNode?)syntaxNodes[0].GetContainingLambdaDefinitionBlock() ?? syntaxNodes[0].GetContainingMethodDeclarationBlock();
             Assert.That(methodDeclaration, Is.Not.Null);
             methodDecl = methodDeclaration;
 
@@ -760,6 +759,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 Is.EquivalentTo(["new Derived2()"]).IgnoreWhiteSpace);
         }
 
+
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
         [Category("Condition")]
@@ -1250,6 +1250,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
 
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Function")]
         public void ShouldProcessFunctionResultAssignment()
         {
             var operation = Process("""
@@ -1289,85 +1290,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
-        public void ShouldProcessDelegateResultAssignment()
-        {
-            var operation = Process("""
-                using System;
-
-                public class Test
-                {
-                    int Create() => 1;
-                    void Func()
-                    {
-                        var func = Create;
-                        var x = func.Invoke();
-                        [|x|].ToString();
-                    }
-                }
-                """,
-                out var semanticModel,
-                out var methodBody);
-
-            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
-                methodBody,
-                semanticModel,
-                null,
-                default);
-            Assert.That(flowAnalysis, Is.Not.Null);
-
-            var state = flowAnalysis.TryGetState(operation);
-            Assert.That(state, Is.Not.Null);
-
-            var path = VariableFlowAnalysis.BuildAccessPath(operation);
-            Assert.That(path.ToString(), Is.EqualTo("x").IgnoreWhiteSpace);
-            var value = state.Environment[path.Root] as ValueTypeValue;
-            Assert.That(value, Is.Not.Null);
-            Assert.That(value.Fields, Is.Empty);
-            Assert.That(
-                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
-                Is.EquivalentTo(["func.Invoke()"]).IgnoreWhiteSpace);
-        }
-        [Test]
-        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
-        public void ShouldProcessAnonymousDelegateResultAssignment()
-        {
-            var operation = Process("""
-                using System;
-
-                public class Test
-                {
-                    void Func()
-                    {
-                        var func = () => 1;
-                        var x = func.Invoke();
-                        [|x|].ToString();
-                    }
-                }
-                """,
-                out var semanticModel,
-                out var methodBody);
-
-            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
-                methodBody,
-                semanticModel,
-                null,
-                default);
-            Assert.That(flowAnalysis, Is.Not.Null);
-
-            var state = flowAnalysis.TryGetState(operation);
-            Assert.That(state, Is.Not.Null);
-
-            var path = VariableFlowAnalysis.BuildAccessPath(operation);
-            Assert.That(path.ToString(), Is.EqualTo("x").IgnoreWhiteSpace);
-            var value = state.Environment[path.Root] as ValueTypeValue;
-            Assert.That(value, Is.Not.Null);
-            Assert.That(value.Fields, Is.Empty);
-            Assert.That(
-                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
-                Is.EquivalentTo(["func.Invoke()"]).IgnoreWhiteSpace);
-        }
-        [Test]
-        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Function")]
         public void ShouldProcessAsyncFunctionResultAssignment()
         {
             var operation = Process("""
@@ -1408,6 +1331,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Function")]
         public void ShouldNotTreatMultipleFunctionResultsAsSameReference()
         {
             var operations = ProcessMultiple("""
@@ -1458,6 +1382,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Function")]
         public void ShouldProcessFunctionResultToArgumentSameValueAssignment()
         {
             var operation = Process(""""
@@ -1500,6 +1425,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Function")]
         public void ShouldTreatSameTaskAwaitAsSameReference()
         {
             var operations = ProcessMultiple("""
@@ -1552,6 +1478,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Function")]
         public void ShouldProcessInlineFunctionArgumentValueTypeAssignment()
         {
             var operation = Process(""""
@@ -1592,6 +1519,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Function")]
         public void ShouldProcessInlineFunctionArgumentReferenceTypeAssignment()
         {
             var operation = Process(""""
@@ -1630,8 +1558,140 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 value.Targets.Nodes.Select(x => x.AllocationOperation?.Syntax.ToFullString()),
                 Is.EquivalentTo(["new Derived()"]).IgnoreWhiteSpace);
         }
+
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Delegate")]
+        public void ShouldProcessDelegateResultAssignment()
+        {
+            var operation = Process("""
+                using System;
+
+                public class Test
+                {
+                    int Create() => 1;
+                    void Func()
+                    {
+                        var func = Create;
+                        var x = func.Invoke();
+                        [|x|].ToString();
+                    }
+                }
+                """,
+                out var semanticModel,
+                out var methodBody);
+
+            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
+                methodBody,
+                semanticModel,
+                null,
+                default);
+            Assert.That(flowAnalysis, Is.Not.Null);
+
+            var state = flowAnalysis.TryGetState(operation);
+            Assert.That(state, Is.Not.Null);
+
+            var path = VariableFlowAnalysis.BuildAccessPath(operation);
+            Assert.That(path.ToString(), Is.EqualTo("x").IgnoreWhiteSpace);
+            var value = state.Environment[path.Root] as ValueTypeValue;
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value.Fields, Is.Empty);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["func.Invoke()"]).IgnoreWhiteSpace);
+        }
+        [Test]
+        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Delegate")]
+        public void ShouldProcessAnonymousDelegateResultAssignment()
+        {
+            var operation = Process("""
+                using System;
+
+                public class Test
+                {
+                    void Func()
+                    {
+                        var func = () => 1;
+                        var x = func.Invoke();
+                        [|x|].ToString();
+                    }
+                }
+                """,
+                out var semanticModel,
+                out var methodBody);
+
+            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
+                methodBody,
+                semanticModel,
+                null,
+                default);
+            Assert.That(flowAnalysis, Is.Not.Null);
+
+            var state = flowAnalysis.TryGetState(operation);
+            Assert.That(state, Is.Not.Null);
+
+            var path = VariableFlowAnalysis.BuildAccessPath(operation);
+            Assert.That(path.ToString(), Is.EqualTo("x").IgnoreWhiteSpace);
+            var value = state.Environment[path.Root] as ValueTypeValue;
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value.Fields, Is.Empty);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["func.Invoke()"]).IgnoreWhiteSpace);
+        }
+        [Test]
+        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Delegate")]
+        public void ShouldNotEscapeLambdaIfInsideLambdaBody()
+        {
+            var operation = Process("""
+                using System;
+
+                public class Test
+                {
+                    void X(Action x)
+                    {
+                        return;
+                    }
+                    void Func()
+                    {
+                        var x = 2;
+                        X(() =>
+                        {
+                            var x = 1;
+                            [|x|].ToString();
+                        });
+                    }
+                }
+                """,
+                out var semanticModel,
+                out var methodBody);
+
+            var flowAnalysis = VariableFlowAnalysis.RunAnalysis(
+                methodBody,
+                semanticModel,
+                null,
+                default);
+            Assert.That(flowAnalysis, Is.Not.Null);
+
+            var state = flowAnalysis.TryGetState(operation);
+            Assert.That(state, Is.Not.Null);
+            var path = VariableFlowAnalysis.BuildAccessPath(operation);
+            Assert.That(path.ToString(), Is.EqualTo("x").IgnoreWhiteSpace);
+
+            var value = state.Environment[path.Root] as ValueTypeValue;
+            Assert.That(value, Is.Not.Null);
+            Assert.That(value.Fields, Is.Empty);
+            Assert.That(
+                value.PossibleValues.Select(x => x.Syntax.ToFullString()),
+                Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
+        }
+
+
+        [Test]
+        [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Assignment")]
         public void ShouldProcessMultipleInlineAssignment()
         {
             var operations = ProcessMultiple(""""
@@ -1689,6 +1749,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Assignment")]
         public void ShouldProcessFunctionOutAssignment()
         {
             var operation = Process(""""
@@ -1726,8 +1787,10 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 value.PossibleValues.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["var x"]).IgnoreWhiteSpace);
         }
+
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Tuple")]
         public void ShouldProcessValueTupleAssignment()
         {
             var operations = ProcessMultiple(""""
@@ -1782,6 +1845,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Tuple")]
         public void ShouldProcessValueTupleSwap()
         {
             var operations = ProcessMultiple(""""
@@ -1838,6 +1902,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
         }
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
+        [Category("Tuple")]
         public void ShouldProcessValueTupleAccess()
         {
             var operations = ProcessMultiple(""""
@@ -1982,6 +2047,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 value.PossibleValues.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["x++"]).IgnoreWhiteSpace);
         }
+
 
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -2178,6 +2244,7 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
                 value2.PossibleValues.Select(x => x.Syntax.ToFullString()),
                 Is.EquivalentTo(["1"]).IgnoreWhiteSpace);
         }
+
 
         [Test]
         [Category(nameof(VariableFlowAnalysis.RunAnalysis))]
@@ -2445,6 +2512,8 @@ namespace Abaddax.Roslyn.Analyzers.Framework.Tests.Analysis
             Assert.That(fieldValue, Is.Not.Null);
             Assert.That(fieldValue.PossibleValues, Has.Count.EqualTo(0));
         }
+
+
 
 
 

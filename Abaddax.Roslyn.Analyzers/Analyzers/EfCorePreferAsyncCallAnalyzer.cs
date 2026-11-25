@@ -60,11 +60,10 @@ namespace Abaddax.Roslyn.Analyzers.Analyzers
             if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
                 return;
 
-            var methodBlock = invocation.GetContainingMethodDeclarationBlock();
-            if (methodBlock == null)
+            var callerSymbol = invocation.GetContainingMethodSymbol(context.SemanticModel, context.CancellationToken);
+            if (callerSymbol == null)
                 return;
-            if (context.SemanticModel.GetDeclaredSymbol(methodBlock, context.CancellationToken) is not IMethodSymbol callerSymbol)
-                return;
+
             // Skip inside sync methods
             if (!callerSymbol.IsTaskedMethodDeclaration())
                 return;

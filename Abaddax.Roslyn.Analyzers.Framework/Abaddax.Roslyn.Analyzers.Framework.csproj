@@ -31,8 +31,4 @@
     <InternalsVisibleTo Include="Abaddax.Roslyn.Analyzers.Framework.Tests" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Abaddax.Roslyn.Analyzers.Attributes\Abaddax.Roslyn.Analyzers.Attributes.csproj" />
-  </ItemGroup>
-
 </Project>
